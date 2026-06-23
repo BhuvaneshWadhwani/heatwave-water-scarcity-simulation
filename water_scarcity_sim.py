@@ -475,7 +475,7 @@ def apply_objection_bump(priority_weights: dict, objecting_ids: list, base_weigh
 
 
 # ============================================================
-# 5. Cognitive scaffold
+# 5. Cognitive scaffold: memory + retrieval
 # ============================================================
 
 @dataclass
@@ -632,9 +632,9 @@ def maybe_reflect(stream, now_hours, n_recent=15, max_questions=2, seed=None):
     return new_insights
 
 
-# =====================================================================
+# ======================================================================
 # 7. Decision loop: need estimation, negotiation moves, authority ruling
-# =====================================================================
+# ======================================================================
 #
 # Arithmetic (today's demand, minimums, clearing) is always computed in
 # Section 2/4 by deterministic formula. The LLM calls below decide
@@ -856,6 +856,34 @@ def execute_trade(allocation: dict, min_acceptable: dict,
 # constructing several RunConfigs and calling run_batch() — not editing
 # module constants between runs.
 
+# Default precedent memories seeded at Day 0 — the institutional analogue of
+# the original sim's single seeded "grim trigger" memory, generalised to
+# every stakeholder. Rationale: a baseline should represent the realistic
+# version of the world, and real institutions don't enter a crisis as blank
+# slates — governments remember past crises, hospitals remember shortages,
+# farmers remember drought policy, utilities remember past failures. Pass
+# precedent_memories={} on a RunConfig to run a "no institutional memory"
+# ablation against this baseline, or a custom dict to control which
+# stakeholder(s) carry history.
+DEFAULT_PRECEDENT_MEMORIES = {
+    "water_authority": "A previous regional drought ended in public criticism of the Water "
+                        "Authority's allocation decisions, which were seen as inconsistent "
+                        "and reactive.",
+    "hospital": "During a previous regional water shortage, the hospital was forced to "
+                "ration sanitation supplies for several days before priority was restored.",
+    "households": "Residents were placed under strict water-use restrictions during a past "
+                   "shortage, and public trust in the Water Authority has not fully recovered.",
+    "agriculture": "In a previous regional drought, the Water Authority deprioritised "
+                    "Agriculture in favour of Industry, and farmers have not forgotten it.",
+    "industry": "Industry was forced into a temporary production shutdown during a past "
+                "shortage, and it lobbied successfully afterward for guaranteed minimum "
+                "allocations.",
+    "energy_utility": "A previous heatwave forced an emergency curtailment of cooling water, "
+                       "triggering a regional power outage that the utility was blamed for.",
+    "epa": "Ecological damage from a past drought — fish kills and wetland loss — went "
+           "largely unaddressed once the immediate water crisis passed.",
+}
+
 @dataclass
 class RunConfig:
     """Everything that can vary between experimental conditions.
@@ -870,7 +898,7 @@ class RunConfig:
     demand_multiplier: float = 1.0
     priority_weight_overrides: dict = field(default_factory=dict)
     stakeholder_subset: Optional[list] = None
-    with_seeded_precedent: bool = True
+    precedent_memories: dict = field(default_factory=lambda: dict(DEFAULT_PRECEDENT_MEMORIES))
     seed: Optional[int] = None
 
     @property
@@ -906,10 +934,13 @@ class RunConfig:
 def initialise_agents(config: RunConfig):
     """Build a fresh set of agents with seeded institutional backstories.
 
-    `config.with_seeded_precedent` adds Agriculture a high-importance memory
-    of a past drought in which it was deprioritised — the institutional
-    analogue of the original sim's seeded "grim trigger". Toggle off via the
-    RunConfig to ablate path-dependency effects.
+    `config.precedent_memories` (a dict of stakeholder_id -> memory text)
+    seeds each named stakeholder a high-importance Day-0 memory of a past
+    precedent — the institutional analogue of the original sim's seeded
+    "grim trigger". Defaults to one memory per stakeholder (see
+    DEFAULT_PRECEDENT_MEMORIES); pass precedent_memories={} to run a
+    no-institutional-memory ablation, or a custom dict to control which
+    stakeholder(s) carry history.
     """
     ids = config.stakeholder_subset or [s.id for s in STAKEHOLDERS]
     agents = {}
@@ -921,12 +952,8 @@ def initialise_agents(config: RunConfig):
             score, _ = rate_importance(chunk, seed=config.seed)
             stream.add(chunk, created_at=0.0, importance=score)
         stream.add(f"My objective: {s.objective}", created_at=0.0, importance=6)
-        if config.with_seeded_precedent and sid == "agriculture":
-            stream.add(
-                "In a previous regional drought, the Water Authority deprioritised "
-                "Agriculture in favour of Industry, and farmers have not forgotten it.",
-                created_at=0.0, importance=9,
-            )
+        if sid in config.precedent_memories:
+            stream.add(config.precedent_memories[sid], created_at=0.0, importance=9)
         agents[sid] = {"stakeholder": s, "stream": stream}
     return agents
 
@@ -1240,5 +1267,5 @@ __all__ = [
     # decision loop
     "estimate_need", "negotiation_move", "authority_ruling",
     # engine
-    "RunConfig", "initialise_agents", "run_simulation", "run_batch", "compute_metrics",
+    "RunConfig", "DEFAULT_PRECEDENT_MEMORIES", "initialise_agents", "run_simulation", "run_batch", "compute_metrics",
 ]
