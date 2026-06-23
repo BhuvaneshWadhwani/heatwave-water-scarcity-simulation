@@ -170,10 +170,27 @@ def print_cost_summary():
 WATER_SUPPLY_SCHEDULE = [1000, 900, 800, 700, 650, 600]   # units/day, days 0..5
 N_DAYS = len(WATER_SUPPLY_SCHEDULE)
 
+# Peak temperature (°C) per day — narrative/contextual heat severity. This is
+# surfaced directly in LLM prompts (need estimation, negotiation moves, the
+# Authority's ruling) so stakeholders' arguments can reference real
+# conditions ("at 41°C, sanitation demand has not dropped") rather than just
+# an abstract day index. It is currently NOT wired into demand_escalation()
+# below — escalation is day-index-based, not temperature-based — so heat
+# severity and demand growth are narratively aligned but not mechanically
+# linked. Rebasing demand_escalation on temperature instead of day is a
+# reasonable later step if you want the physics itself to be heat-driven;
+# kept separate for now to avoid changing already-tested escalation behavior.
+TEMPERATURE_SCHEDULE = [34, 37, 40, 41, 39, 36]   # °C peak, days 0..5
+
 
 def total_supply(day: int) -> float:
     """Total raw water available on a given day."""
     return float(WATER_SUPPLY_SCHEDULE[day])
+
+
+def total_temperature(day: int) -> float:
+    """Peak temperature (°C) on a given day."""
+    return float(TEMPERATURE_SCHEDULE[day])
 
 
 def demand_escalation(stakeholder_id: str, day: int) -> float:
@@ -345,9 +362,9 @@ def min_acceptable_today(stakeholder_id: str, day: int) -> float:
     return round(demand_today(stakeholder_id, day) * s.min_acceptable_frac, 1)
 
 
-# =============================================================================
+# =====================================================================
 # 4. Negotiation protocol: requests, deterministic clearing, severity
-# =============================================================================
+# =====================================================================
 
 @dataclass
 class Request:
@@ -615,9 +632,9 @@ def maybe_reflect(stream, now_hours, n_recent=15, max_questions=2, seed=None):
     return new_insights
 
 
-# ============================================================
+# =====================================================================
 # 7. Decision loop: need estimation, negotiation moves, authority ruling
-# ============================================================
+# =====================================================================
 #
 # Arithmetic (today's demand, minimums, clearing) is always computed in
 # Section 2/4 by deterministic formula. The LLM calls below decide
@@ -635,9 +652,10 @@ Background: {voice}
 Your objective: {objective}
 Your current negotiation strategy: {strategy}
 
-Today is Day {day}. Your baseline operational need today (before any strategic shading) is \
-{demand:.0f} units. Your stated minimum acceptable amount, below which your failure \
-conditions are triggered, is {min_acceptable:.0f} units.
+Today is Day {day}. Today's peak temperature is {peak_temp_c:.0f}°C. Your baseline \
+operational need today (before any strategic shading) is {demand:.0f} units. Your stated \
+minimum acceptable amount, below which your failure conditions are triggered, is \
+{min_acceptable:.0f} units.
 Your failure conditions: {failure_conditions}
 
 Your recent institutional memory:
@@ -662,12 +680,13 @@ def _parse_request(raw, fallback_demand):
 
 
 def estimate_need(stakeholder: Stakeholder, day: int, stream: "MemoryStream",
-                   demand: float, min_acceptable: float, seed=None) -> Request:
-    """`demand`/`min_acceptable` are passed in rather than recomputed here,
-    so the caller (run_simulation, driven by a RunConfig) controls the
-    "physics" for this run — e.g. a scaled-demand or shortened-schedule
-    experimental condition — without this function needing to know about
-    experimental conditions at all."""
+                   demand: float, min_acceptable: float, peak_temp_c: float = None,
+                   seed=None) -> Request:
+    """`demand`/`min_acceptable`/`peak_temp_c` are passed in rather than
+    recomputed here, so the caller (run_simulation, driven by a RunConfig)
+    controls the "physics" for this run — e.g. a scaled-demand or
+    shortened-schedule experimental condition — without this function
+    needing to know about experimental conditions at all."""
     query = f"What should I request today given the water shortage? Day {day}."
     top = retrieve(stream, query, now_hours=day, k=5)
     memories_block = "\n".join(f"  - {m.content}" for m in top) or "  (no relevant memories yet)"
@@ -675,7 +694,8 @@ def estimate_need(stakeholder: Stakeholder, day: int, stream: "MemoryStream",
     prompt = NEED_ESTIMATION_PROMPT.format(
         name=stakeholder.name, role=stakeholder.role, voice=stakeholder.voice,
         objective=stakeholder.objective, strategy=stakeholder.strategy,
-        day=day, demand=demand, min_acceptable=min_acceptable,
+        day=day, peak_temp_c=peak_temp_c if peak_temp_c is not None else float("nan"),
+        demand=demand, min_acceptable=min_acceptable,
         failure_conditions=stakeholder.failure_conditions,
         memories_block=memories_block,
     )
@@ -687,7 +707,8 @@ def estimate_need(stakeholder: Stakeholder, day: int, stream: "MemoryStream",
 
 
 NEGOTIATION_MOVE_PROMPT = '''You are negotiating on behalf of {name} ({role}) during a severe \
-water shortage. It is Day {day}, negotiation round {round}.
+water shortage. It is Day {day}, negotiation round {round}. Today's peak temperature is \
+{peak_temp_c:.0f}°C.
 
 Your objective: {objective}
 Your current negotiation strategy: {strategy}
@@ -741,7 +762,8 @@ def _parse_move(raw, current_min):
 
 def negotiation_move(stakeholder: Stakeholder, day: int, round_no: int,
                       requested: float, min_acceptable: float, proposed: float,
-                      stream: "MemoryStream", seed=None) -> NegotiationMove:
+                      stream: "MemoryStream", peak_temp_c: float = None,
+                      seed=None) -> NegotiationMove:
     peers = NEGOTIATION_TOPOLOGY.get(stakeholder.id, [])
     trade_block = (f"You may also propose a direct trade with: {', '.join(peers)}."
                     if peers else "")
@@ -756,6 +778,7 @@ def negotiation_move(stakeholder: Stakeholder, day: int, round_no: int,
 
     prompt = NEGOTIATION_MOVE_PROMPT.format(
         name=stakeholder.name, role=stakeholder.role, day=day, round=round_no,
+        peak_temp_c=peak_temp_c if peak_temp_c is not None else float("nan"),
         objective=stakeholder.objective, strategy=stakeholder.strategy,
         requested=requested, min_acceptable=min_acceptable, proposed=proposed,
         shortfall=max(0.0, min_acceptable - proposed),
@@ -771,7 +794,7 @@ def negotiation_move(stakeholder: Stakeholder, day: int, round_no: int,
 
 
 AUTHORITY_RULING_PROMPT = '''You are the Municipal Water Authority, ruling on Day {day}'s water \
-allocation during a severe shortage.
+allocation during a severe shortage. Today's peak temperature is {peak_temp_c:.0f}°C.
 
 Total supply available today: {supply:.0f} units.
 Final allocation reached: {allocation_block}
@@ -784,10 +807,12 @@ the decision. Do not restate the numbers; explain the reasoning.'''
 
 
 def authority_ruling(day: int, supply: float, allocation: dict, context_block: str,
-                      stream: "MemoryStream", seed=None) -> str:
+                      stream: "MemoryStream", peak_temp_c: float = None,
+                      seed=None) -> str:
     allocation_block = ", ".join(f"{STAKEHOLDER_BY_ID[i].name}: {v:.0f}" for i, v in allocation.items())
     prompt = AUTHORITY_RULING_PROMPT.format(
-        day=day, supply=supply, allocation_block=allocation_block, context_block=context_block,
+        day=day, peak_temp_c=peak_temp_c if peak_temp_c is not None else float("nan"),
+        supply=supply, allocation_block=allocation_block, context_block=context_block,
     )
     return llm(prompt, temperature=0.6, max_tokens=150, seed=seed)
 
@@ -840,6 +865,7 @@ class RunConfig:
     """
     condition_label: str = "baseline"
     supply_schedule: list = field(default_factory=lambda: list(WATER_SUPPLY_SCHEDULE))
+    temperature_schedule: list = field(default_factory=lambda: list(TEMPERATURE_SCHEDULE))
     max_rounds: int = MAX_NEGOTIATION_ROUNDS
     demand_multiplier: float = 1.0
     priority_weight_overrides: dict = field(default_factory=dict)
@@ -853,6 +879,12 @@ class RunConfig:
 
     def supply(self, day: int) -> float:
         return float(self.supply_schedule[day])
+
+    def temperature(self, day: int) -> float:
+        # Clamp rather than index-error if temperature_schedule wasn't
+        # resized to match a custom (longer) supply_schedule.
+        idx = min(day, len(self.temperature_schedule) - 1)
+        return float(self.temperature_schedule[idx])
 
     def priority_weight(self, stakeholder_id: str) -> float:
         return self.priority_weight_overrides.get(
@@ -954,6 +986,7 @@ def run_simulation(config: Optional[RunConfig] = None, run_id: Optional[str] = N
         if verbose:
             print(f"--- Day {day} ({run_id}) ---")
         supply = config.supply(day)
+        peak_temp_c = config.temperature(day)
 
         # Phase 1: need estimation (LLM, one call per demander/advocate)
         requests = {}
@@ -961,7 +994,8 @@ def run_simulation(config: Optional[RunConfig] = None, run_id: Optional[str] = N
             demand = config.demand(sid, day)
             min_acc = config.min_acceptable(sid, day)
             req = estimate_need(STAKEHOLDER_BY_ID[sid], day, agents[sid]["stream"],
-                                 demand=demand, min_acceptable=min_acc, seed=seed)
+                                 demand=demand, min_acceptable=min_acc,
+                                 peak_temp_c=peak_temp_c, seed=seed)
             requests[sid] = req
             decision_rows.append(tag({
                 "day": day, "stakeholder_id": sid, "name": STAKEHOLDER_BY_ID[sid].name,
@@ -989,7 +1023,7 @@ def run_simulation(config: Optional[RunConfig] = None, run_id: Optional[str] = N
                 move = negotiation_move(
                     STAKEHOLDER_BY_ID[sid], day, round_no,
                     requested_units[sid], min_acceptable[sid], allocation[sid],
-                    agents[sid]["stream"], seed=seed,
+                    agents[sid]["stream"], peak_temp_c=peak_temp_c, seed=seed,
                 )
                 moves_today.append(move)
                 if move.move_type == "object":
@@ -1025,7 +1059,8 @@ def run_simulation(config: Optional[RunConfig] = None, run_id: Optional[str] = N
             context_block = ("No stakeholder fell below its minimum; allocation followed "
                               "standard priority order without negotiation.")
         ruling_text = authority_ruling(day, supply, allocation, context_block,
-                                        agents["water_authority"]["stream"], seed=seed)
+                                        agents["water_authority"]["stream"],
+                                        peak_temp_c=peak_temp_c, seed=seed)
 
         # Phase 5: deterministic outcome computation
         total_allocated = round(sum(allocation.values()), 1)
@@ -1046,7 +1081,7 @@ def run_simulation(config: Optional[RunConfig] = None, run_id: Optional[str] = N
                 "critical_failure": critical_failure, "severity_today": is_severe,
                 "rounds_today": round_no, "imposed_today": imposed,
                 "cooperated": cooperated, "objected": objected,
-                "supply": supply, "total_allocated": total_allocated,
+                "supply": supply, "total_allocated": total_allocated, "peak_temp_c": peak_temp_c,
                 "ruling_text": ruling_text,
             }))
 
@@ -1189,6 +1224,7 @@ def compute_metrics(outcomes_df: pd.DataFrame, decisions_df: pd.DataFrame):
 __all__ = [
     # world
     "WATER_SUPPLY_SCHEDULE", "N_DAYS", "total_supply", "demand_escalation",
+    "TEMPERATURE_SCHEDULE", "total_temperature",
     # stakeholders
     "Stakeholder", "STAKEHOLDERS", "STAKEHOLDER_BY_ID", "DEMANDER_IDS",
     "NEGOTIATION_TOPOLOGY", "demand_today", "min_acceptable_today",
