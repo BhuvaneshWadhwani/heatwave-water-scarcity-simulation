@@ -31,6 +31,9 @@ import json
 import math
 import os
 import re
+import threading
+import time
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
@@ -45,15 +48,35 @@ import pandas as pd
 
 CACHE_DIR = Path(__file__).parent / "water_scarcity_sim_cache"
 CACHE_DIR.mkdir(exist_ok=True)
-CACHE_FILE = CACHE_DIR / "llm_cache.json"
+CACHE_FILE = CACHE_DIR / "llm_cache.json"          # legacy format — read at startup, never written again
+CACHE_JSONL_FILE = CACHE_DIR / "llm_cache.jsonl"   # append-only format — all new entries go here
 
+# PERFORMANCE NOTE: the old approach rewrote the *entire* accumulated cache
+# to disk after every single API call. On a long multi-condition, multi-seed
+# batch this is the dominant cost, not network latency: write time grows
+# with total cache size, so it grows roughly QUADRATICALLY with total call
+# count across a run (confirmed by benchmark: ~70ms/save at 50 cached
+# entries vs ~2.5s/save at 2000 — and that 2.5s is paid on *every single*
+# subsequent call). Appending one line per new entry is O(1) per call
+# instead, and is also safe if multiple threads are writing concurrently
+# (see _cache_lock below).
+_cache = {}
 if CACHE_FILE.exists():
     with open(CACHE_FILE) as _f:
-        _cache = json.load(_f)
-else:
-    _cache = {}
+        _cache.update(json.load(_f))
+if CACHE_JSONL_FILE.exists():
+    with open(CACHE_JSONL_FILE) as _f:
+        for _line in _f:
+            _line = _line.strip()
+            if not _line:
+                continue
+            try:
+                _entry = json.loads(_line)
+                _cache[_entry["key"]] = _entry["value"]
+            except Exception:
+                continue   # tolerate a truncated last line from an interrupted run
 
-_env_file = Path(__file__).parent.parent.parent / ".env"
+_env_file = Path(__file__).parent / ".env"
 if _env_file.exists():
     for _line in _env_file.read_text().splitlines():
         _line = _line.strip()
@@ -69,15 +92,20 @@ else:
     client = None
 
 PRICING_PER_TOKEN = {
-    "gpt-4o-mini":            {"in": 0.15 / 1e6, "out": 0.60 / 1e6},
-    "text-embedding-3-small": {"in": 0.02 / 1e6, "out": 0.0},
-}
+    "gpt-5.4-mini": {"in": 0.75 / 1e6, "out": 4.50 / 1e6,},
+    "text-embedding-3-small": {"in": 0.02 / 1e6, "out": 0.0,},
+    }
+
 _usage = {"tokens": {}, "calls": {"chat_live": 0, "chat_cached": 0,
                                    "embed_live": 0, "embed_cached": 0}}
 
 
+_cache_lock = threading.Lock()
+
+
 def _bump(model, kind, n):
-    _usage["tokens"][(model, kind)] = _usage["tokens"].get((model, kind), 0) + n
+    with _cache_lock:
+        _usage["tokens"][(model, kind)] = _usage["tokens"].get((model, kind), 0) + n
 
 
 def _cache_key(kind, model, payload):
@@ -85,12 +113,15 @@ def _cache_key(kind, model, payload):
     return f"{kind}:{model}:{h}"
 
 
-def _save_cache():
-    with open(CACHE_FILE, "w") as f:
-        json.dump(_cache, f, indent=2)
+def _save_cache_entry(key, value):
+    """Append one new cache entry to disk. O(1) regardless of how large the
+    accumulated cache already is — see the PERFORMANCE NOTE above _cache."""
+    with _cache_lock:
+        with open(CACHE_JSONL_FILE, "a") as f:
+            f.write(json.dumps({"key": key, "value": value}) + "\n")
 
 
-def llm(prompt, model="gpt-4o-mini", temperature=0.7, max_tokens=400, seed=None):
+def llm(prompt, model="gpt-5.4-mini", temperature=0.7, max_tokens=400, seed=None):
     """Single-prompt completion, cached by (model, prompt, temperature, seed).
 
     `seed`, when set, is forwarded to the API's reproducibility parameter and
@@ -101,39 +132,55 @@ def llm(prompt, model="gpt-4o-mini", temperature=0.7, max_tokens=400, seed=None)
     different sampled answer) — which is the point of running them.
     """
     key = _cache_key("chat", model, {"prompt": prompt, "temperature": temperature, "seed": seed})
-    if key in _cache:
-        _usage["calls"]["chat_cached"] += 1
-        return _cache[key]
+    with _cache_lock:
+        if key in _cache:
+            _usage["calls"]["chat_cached"] += 1
+            return _cache[key]
     if client is None:
         raise RuntimeError(f"Prompt not in cache and no API key set:\n{prompt[:200]}...")
-    kwargs = dict(model=model, temperature=temperature, max_tokens=max_tokens,
-                  messages=[{"role": "user", "content": prompt}])
-    if seed is not None:
+    kwargs = {
+    "model": model,
+    "temperature": temperature,
+    "messages": [{"role": "user", "content": prompt}],
+    }
+
+    if model.startswith("gpt-5"):
+        kwargs["max_completion_tokens"] = max_tokens
+    else:
+        kwargs["max_tokens"] = max_tokens
+
+    # Some newer models may not support seed in Chat Completions.
+    # Keep seed only for models that support it.
+    if seed is not None and not model.startswith("gpt-5"):
         kwargs["seed"] = seed
+
     r = client.chat.completions.create(**kwargs)
     out = r.choices[0].message.content.strip()
     _bump(model, "in", r.usage.prompt_tokens)
     _bump(model, "out", r.usage.completion_tokens)
-    _usage["calls"]["chat_live"] += 1
-    _cache[key] = out
-    _save_cache()
+    with _cache_lock:
+        _usage["calls"]["chat_live"] += 1
+        _cache[key] = out
+    _save_cache_entry(key, out)
     return out
 
 
 def embed(text, model="text-embedding-3-small"):
     """Embed one string, cached by (model, text)."""
     key = _cache_key("embed", model, {"text": text})
-    if key in _cache:
-        _usage["calls"]["embed_cached"] += 1
-        return np.array(_cache[key])
+    with _cache_lock:
+        if key in _cache:
+            _usage["calls"]["embed_cached"] += 1
+            return np.array(_cache[key])
     if client is None:
         raise RuntimeError(f"Embedding not in cache and no API key set: {text[:80]}")
     r = client.embeddings.create(model=model, input=text)
     vec = r.data[0].embedding
     _bump(model, "in", r.usage.prompt_tokens)
-    _usage["calls"]["embed_live"] += 1
-    _cache[key] = vec
-    _save_cache()
+    with _cache_lock:
+        _usage["calls"]["embed_live"] += 1
+        _cache[key] = vec
+    _save_cache_entry(key, vec)
     return np.array(vec)
 
 
@@ -167,30 +214,30 @@ def print_cost_summary():
 # architecture below does not assume a single pool, so it can be added
 # later (e.g. one pool per federal state) without touching sections 4-8.
 
-WATER_SUPPLY_SCHEDULE = [1000, 900, 800, 700, 650, 600]   # units/day, days 0..5
+WATER_SUPPLY_SCHEDULE = [1000, 900, 800, 700, 650, 600]   # units/day, days 1..6
 N_DAYS = len(WATER_SUPPLY_SCHEDULE)
 
 # Peak temperature (°C) per day — narrative/contextual heat severity. This is
 # surfaced directly in LLM prompts (need estimation, negotiation moves, the
 # Authority's ruling) so stakeholders' arguments can reference real
 # conditions ("at 41°C, sanitation demand has not dropped") rather than just
-# an abstract day index. It is currently NOT wired into demand_escalation()
-# below — escalation is day-index-based, not temperature-based — so heat
+# an abstract day number. It is currently NOT wired into demand_escalation()
+# below — escalation is day-number-based, not temperature-based — so heat
 # severity and demand growth are narratively aligned but not mechanically
 # linked. Rebasing demand_escalation on temperature instead of day is a
 # reasonable later step if you want the physics itself to be heat-driven;
 # kept separate for now to avoid changing already-tested escalation behavior.
-TEMPERATURE_SCHEDULE = [34, 37, 40, 41, 39, 36]   # °C peak, days 0..5
+TEMPERATURE_SCHEDULE = [34, 37, 40, 41, 39, 36]   # °C peak, days 1..6
 
 
 def total_supply(day: int) -> float:
-    """Total raw water available on a given day."""
-    return float(WATER_SUPPLY_SCHEDULE[day])
+    """Total raw water available on a given day (1-based day number)."""
+    return float(WATER_SUPPLY_SCHEDULE[day - 1])
 
 
 def total_temperature(day: int) -> float:
-    """Peak temperature (°C) on a given day."""
-    return float(TEMPERATURE_SCHEDULE[day])
+    """Peak temperature (°C) on a given day (1-based day number)."""
+    return float(TEMPERATURE_SCHEDULE[day - 1])
 
 
 def demand_escalation(stakeholder_id: str, day: int) -> float:
@@ -199,14 +246,15 @@ def demand_escalation(stakeholder_id: str, day: int) -> float:
     original sim's temperature model — and is intentionally not an LLM
     decision: physical/operational need grows independently of strategy.
     """
+    day_index = day - 1
     if stakeholder_id == "agriculture":
-        return 1.0 + 0.05 * day          # cumulative crop/livestock stress
+        return 1.0 + 0.05 * day_index          # cumulative crop/livestock stress
     if stakeholder_id == "energy_utility":
-        return 1.0 + 0.04 * day          # cooling load rises with heat
+        return 1.0 + 0.04 * day_index          # cooling load rises with heat
     if stakeholder_id == "households":
-        return 1.0 + 0.03 * day          # personal cooling/hygiene use rises
+        return 1.0 + 0.03 * day_index          # personal cooling/hygiene use rises
     if stakeholder_id == "hospital":
-        return 1.0 + 0.02 * day          # heat-related admissions rise modestly
+        return 1.0 + 0.02 * day_index          # heat-related admissions rise modestly
     return 1.0
 
 
@@ -495,13 +543,14 @@ class MemoryStream:
         self.agent_name = agent_name
         self.memories: list[Memory] = []
 
-    def add(self, content, created_at, importance, with_embedding=True):
+    def add(self, content, created_at, importance, with_embedding=True, embedding=None):
         m = Memory(
             content=content,
             created_at=created_at,
             last_accessed=created_at,
             importance=importance,
-            embedding=embed(content) if with_embedding else None,
+            embedding=embedding if embedding is not None
+                      else (embed(content) if with_embedding else None),
         )
         self.memories.append(m)
         return m
@@ -906,12 +955,12 @@ class RunConfig:
         return len(self.supply_schedule)
 
     def supply(self, day: int) -> float:
-        return float(self.supply_schedule[day])
+        return float(self.supply_schedule[day - 1])
 
     def temperature(self, day: int) -> float:
         # Clamp rather than index-error if temperature_schedule wasn't
         # resized to match a custom (longer) supply_schedule.
-        idx = min(day, len(self.temperature_schedule) - 1)
+        idx = min(day - 1, len(self.temperature_schedule) - 1)
         return float(self.temperature_schedule[idx])
 
     def priority_weight(self, stakeholder_id: str) -> float:
@@ -929,6 +978,16 @@ class RunConfig:
     def demander_ids(self) -> list:
         ids = self.stakeholder_subset or [s.id for s in STAKEHOLDERS]
         return [i for i in DEMANDER_IDS if i in ids]
+
+
+def _prepare_memory_write(content, seed):
+    """Compute everything needed to write one memory (importance score +
+    embedding) so both network calls for a piece of text can be dispatched
+    as a single concurrent task, instead of one rate_importance() call and
+    one embed() call happening sequentially in the main loop."""
+    score, _ = rate_importance(content, seed=seed)
+    vec = embed(content)
+    return content, score, vec
 
 
 def initialise_agents(config: RunConfig):
@@ -1009,21 +1068,32 @@ def run_simulation(config: Optional[RunConfig] = None, run_id: Optional[str] = N
         row["seed"] = seed
         return row
 
-    for day in range(config.n_days):
+    for day in range(1, config.n_days + 1):
         if verbose:
             print(f"--- Day {day} ({run_id}) ---")
         supply = config.supply(day)
         peak_temp_c = config.temperature(day)
 
-        # Phase 1: need estimation (LLM, one call per demander/advocate)
+        # Phase 1: need estimation (LLM, one call per demander/advocate).
+        # Each call only reads its own stakeholder's MemoryStream and writes
+        # nothing, so these are independent and safe to dispatch
+        # concurrently — this does not change any computed value, only how
+        # much wall-clock time the day-phase takes.
         requests = {}
+        with ThreadPoolExecutor(max_workers=max(1, len(demander_ids))) as pool:
+            futures = {
+                sid: pool.submit(
+                    estimate_need, STAKEHOLDER_BY_ID[sid], day, agents[sid]["stream"],
+                    demand=config.demand(sid, day), min_acceptable=config.min_acceptable(sid, day),
+                    peak_temp_c=peak_temp_c, seed=seed,
+                )
+                for sid in demander_ids
+            }
+            for sid in demander_ids:   # fixed iteration order -> deterministic row order
+                requests[sid] = futures[sid].result()
+
         for sid in demander_ids:
-            demand = config.demand(sid, day)
-            min_acc = config.min_acceptable(sid, day)
-            req = estimate_need(STAKEHOLDER_BY_ID[sid], day, agents[sid]["stream"],
-                                 demand=demand, min_acceptable=min_acc,
-                                 peak_temp_c=peak_temp_c, seed=seed)
-            requests[sid] = req
+            req = requests[sid]
             decision_rows.append(tag({
                 "day": day, "stakeholder_id": sid, "name": STAKEHOLDER_BY_ID[sid].name,
                 "event_type": "request", "round": 0, "move_type": "request",
@@ -1112,32 +1182,40 @@ def run_simulation(config: Optional[RunConfig] = None, run_id: Optional[str] = N
                 "ruling_text": ruling_text,
             }))
 
-        # Phase 6: memory writes — own outcome + observed peer behaviour + the ruling
+        # Phase 6: memory writes — own outcome + observed peer behaviour + the ruling.
+        # Each text's (importance, embedding) computation is independent of
+        # every other text, so gather every pending write first, dispatch
+        # them all concurrently, then apply the results sequentially —
+        # sequential application is cheap (no network calls) and avoids any
+        # concern about two threads appending to the same MemoryStream's
+        # list at once.
+        pending = []   # list of (sid, content, created_at)
         for sid in demander_ids:
             req, alloc = requested_units[sid], allocation[sid]
             pct = (alloc / req * 100) if req > 0 else 100.0
             own_obs = f"Day {day}: requested {req:.0f} units, received {alloc:.0f} ({pct:.0f}% of request)."
-            score, _ = rate_importance(own_obs, seed=seed)
-            agents[sid]["stream"].add(own_obs, created_at=day, importance=score)
+            pending.append((sid, own_obs, day))
 
             for m in moves_today:
                 if m.stakeholder_id == sid:
                     continue
                 obs = _cooperation_observation(STAKEHOLDER_BY_ID[m.stakeholder_id].name, m)
                 if obs:
-                    obs = f"Day {day}: {obs}"
-                    score2, _ = rate_importance(obs, seed=seed)
-                    agents[sid]["stream"].add(obs, created_at=day, importance=score2)
+                    pending.append((sid, f"Day {day}: {obs}", day))
 
             ruling_obs = f"Day {day} Water Authority ruling: {ruling_text}"
-            score3, _ = rate_importance(ruling_obs, seed=seed)
-            agents[sid]["stream"].add(ruling_obs, created_at=day, importance=score3)
+            pending.append((sid, ruling_obs, day))
 
         auth_obs = (f"Day {day}: allocated {total_allocated:.0f} of {supply:.0f} units across "
                     f"{len(demander_ids)} stakeholders; "
                     f"{'escalated negotiation' if is_severe else 'no escalation needed'}.")
-        score4, _ = rate_importance(auth_obs, seed=seed)
-        agents["water_authority"]["stream"].add(auth_obs, created_at=day, importance=score4)
+        pending.append(("water_authority", auth_obs, day))
+
+        with ThreadPoolExecutor(max_workers=max(1, len(pending))) as pool:
+            results = list(pool.map(lambda p: _prepare_memory_write(p[1], seed), pending))
+
+        for (sid, content, created_at), (_, score, vec) in zip(pending, results):
+            agents[sid]["stream"].add(content, created_at=created_at, importance=score, embedding=vec)
 
         # Phase 7: reflection for every agent
         for a in agents.values():
@@ -1152,7 +1230,8 @@ def run_simulation(config: Optional[RunConfig] = None, run_id: Optional[str] = N
     return pd.DataFrame(decision_rows), pd.DataFrame(outcome_rows), agents
 
 
-def run_batch(configs: list, n_seeds: int = 1, base_seed: int = 0, verbose=False):
+def run_batch(configs: list, n_seeds: int = 1, base_seed: int = 0, verbose=False,
+              max_workers: int = 1):
     """Run several experimental conditions (optionally x several seeds each)
     and return concatenated (decisions_df, outcomes_df) ready for aggregate
     analysis, e.g.:
@@ -1161,22 +1240,64 @@ def run_batch(configs: list, n_seeds: int = 1, base_seed: int = 0, verbose=False
         per_run_day, per_run_summary = compute_metrics(outcomes_df, decisions_df)
         per_run_summary.groupby("condition")[["mean_fairness_gini", ...]].agg(["mean", "std"])
 
+    Always prints which run is starting/finishing and an elapsed/ETA
+    estimate, regardless of `verbose` — `verbose` only controls whether
+    run_simulation() ALSO prints day-by-day detail within each run.
+
+    `max_workers` controls how many (condition, seed) runs execute
+    concurrently. Defaults to 1 (fully sequential, identical to previous
+    behavior) since firing many runs at once multiplies your concurrent API
+    load — each run already parallelizes its own internal LLM calls (see
+    run_simulation), so try max_workers=1 first and only raise it if you've
+    confirmed your account's rate limits comfortably support it.
+
     `agents` (memory streams) are intentionally not part of this return —
     for n_seeds x len(configs) runs, that's a lot of state to hold at once.
     If you need to inspect one run's memories qualitatively, call
     run_simulation() directly for that one (condition, seed).
     """
-    all_decisions, all_outcomes = [], []
+    run_specs = []
     for config in configs:
         for s in range(n_seeds):
             seed = base_seed + s
             run_id = f"{config.condition_label}_seed{seed}"
-            run_config = RunConfig(**{**config.__dict__, "seed": seed})
-            if verbose:
-                print(f"=== Running {run_id} ===")
-            dec_df, out_df, _ = run_simulation(run_config, run_id=run_id, verbose=verbose)
-            all_decisions.append(dec_df)
-            all_outcomes.append(out_df)
+            run_specs.append((run_id, RunConfig(**{**config.__dict__, "seed": seed})))
+
+    total = len(run_specs)
+    start_time = time.time()
+    results = {}
+    completed = 0
+    print_lock = threading.Lock()
+
+    def _run_one(i, run_id, run_config):
+        nonlocal completed
+        with print_lock:
+            print(f"[{i+1}/{total}] starting {run_id} ...", flush=True)
+        dec_df, out_df, _ = run_simulation(run_config, run_id=run_id, verbose=verbose)
+        with print_lock:
+            completed += 1
+            elapsed = time.time() - start_time
+            avg = elapsed / completed
+            eta = avg * (total - completed)
+            print(f"[{i+1}/{total}] finished {run_id}  "
+                  f"(elapsed {elapsed/60:.1f} min, avg {avg/60:.1f} min/run, "
+                  f"ETA {eta/60:.1f} min)", flush=True)
+        return run_id, dec_df, out_df
+
+    if max_workers <= 1:
+        for i, (run_id, run_config) in enumerate(run_specs):
+            _, dec_df, out_df = _run_one(i, run_id, run_config)
+            results[run_id] = (dec_df, out_df)
+    else:
+        with ThreadPoolExecutor(max_workers=max_workers) as pool:
+            futures = [pool.submit(_run_one, i, run_id, run_config)
+                       for i, (run_id, run_config) in enumerate(run_specs)]
+            for f in futures:
+                run_id, dec_df, out_df = f.result()
+                results[run_id] = (dec_df, out_df)
+
+    all_decisions = [results[run_id][0] for run_id, _ in run_specs]
+    all_outcomes = [results[run_id][1] for run_id, _ in run_specs]
     return pd.concat(all_decisions, ignore_index=True), pd.concat(all_outcomes, ignore_index=True)
 
 
