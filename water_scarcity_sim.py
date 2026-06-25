@@ -328,7 +328,7 @@ STAKEHOLDERS: list[Stakeholder] = [
         voice="Represents regional farms and livestock operations. Water shortage "
               "compounds across days — a single bad day is recoverable, several in a "
               "row are not.",
-        base_demand=250.0, min_acceptable_frac=0.60, priority_weight=2.0,
+        base_demand=250.0, min_acceptable_frac=0.70, priority_weight=2.0,
         priority_arguments=["Crop and livestock losses are irreversible once thresholds are crossed",
                              "Today's shortfall compounds tomorrow's losses"],
         failure_conditions="Sustained shortfall below minimum for 2+ days: irreversible "
@@ -343,7 +343,7 @@ STAKEHOLDERS: list[Stakeholder] = [
               "weakest moral claim relative to health or food, but the most concentrated "
               "and immediate economic damage, and can credibly threaten production cuts "
               "or relocation.",
-        base_demand=150.0, min_acceptable_frac=0.65, priority_weight=1.0,
+        base_demand=150.0, min_acceptable_frac=0.72, priority_weight=1.0,
         priority_arguments=["Production shutdowns cause immediate job losses",
                              "Economic damage to the region if industry relocates"],
         failure_conditions="Below minimum: forced production cuts, risk of layoffs.",
@@ -371,7 +371,7 @@ STAKEHOLDERS: list[Stakeholder] = [
               "operations — it advocates for an ecological reserve that has no direct "
               "stakeholder voice of its own. Its claim is precautionary and long-horizon, "
               "and easy for other actors to discount under acute short-term pressure.",
-        base_demand=80.0, min_acceptable_frac=0.55, priority_weight=1.5,
+        base_demand=80.0, min_acceptable_frac=0.65, priority_weight=1.5,
         priority_arguments=["Ecological collapse from prolonged low flow is not reversible "
                              "on human timescales",
                              "Legal minimum-flow requirements exist independent of the heatwave"],
@@ -389,8 +389,8 @@ DEMANDER_IDS = [s.id for s in STAKEHOLDERS if s.role in ("demander", "advocate")
 # Negotiation topology: who can propose bilateral trades to whom, in addition
 # to the implicit hub link every demander has to the Water Authority.
 NEGOTIATION_TOPOLOGY = {
-    "hospital": [],
-    "households": [],
+    "hospital": ["energy_utility"],          # can spare non-critical cooling water if energy risks outage
+    "households": ["agriculture"],           # political will to support food security
     "agriculture": ["industry"],
     "industry": ["agriculture", "energy_utility"],
     "energy_utility": ["industry"],
@@ -764,7 +764,7 @@ Your current negotiation strategy: {strategy}
 Your requested amount today: {requested:.0f} units. Your minimum acceptable: {min_acceptable:.0f} units.
 
 The Water Authority's current proposed allocation to you is {proposed:.0f} units — \
-{shortfall:.0f} units below your stated minimum.
+{shortfall_desc}
 Your failure conditions: {failure_conditions}
 
 {trade_block}
@@ -773,7 +773,7 @@ Your recent institutional memory:
 {memories_block}
 
 Choose ONE move:
-ACCEPT — accept the shortfall as-is.
+ACCEPT — accept your current allocation as-is (signal of cooperation or satisfaction).
 CONCEDE — lower your stated minimum for today in exchange for something (state what you want in return, e.g. priority tomorrow).
 OBJECT — refuse to accept, citing your failure conditions, and push the Authority to revise.
 {trade_option}
@@ -821,6 +821,14 @@ def negotiation_move(stakeholder: Stakeholder, day: int, round_no: int,
                     if peers else "")
     trade_format = "|PROPOSE_TRADE" if peers else ""
 
+    shortfall = max(0.0, min_acceptable - proposed)
+    if shortfall > 0:
+        shortfall_desc = f"{shortfall:.0f} units below your stated minimum."
+    else:
+        surplus = proposed - min_acceptable
+        shortfall_desc = (f"above your stated minimum by {surplus:.0f} units — "
+                          f"you are not currently in distress, but you may still cooperate or trade.")
+
     query = f"How should I respond to the Water Authority's proposed allocation? Day {day}."
     top = retrieve(stream, query, now_hours=day, k=5)
     memories_block = "\n".join(f"  - {m.content}" for m in top) or "  (no relevant memories yet)"
@@ -830,7 +838,7 @@ def negotiation_move(stakeholder: Stakeholder, day: int, round_no: int,
         peak_temp_c=peak_temp_c if peak_temp_c is not None else float("nan"),
         objective=stakeholder.objective, strategy=stakeholder.strategy,
         requested=requested, min_acceptable=min_acceptable, proposed=proposed,
-        shortfall=max(0.0, min_acceptable - proposed),
+        shortfall_desc=shortfall_desc,
         failure_conditions=stakeholder.failure_conditions,
         trade_block=trade_block, trade_option=trade_option, trade_format=trade_format,
         memories_block=memories_block,
@@ -1018,6 +1026,8 @@ def initialise_agents(config: RunConfig):
 
 
 def _cooperation_observation(mover_name, move):
+    if move.move_type == "accept":
+        return f"{mover_name} accepted the Authority's allocation without objection."
     if move.move_type == "object":
         return f"{mover_name} refused to accept a reduced allocation, citing its failure conditions."
     if move.move_type == "concede":
@@ -1116,7 +1126,11 @@ def run_simulation(config: Optional[RunConfig] = None, run_id: Optional[str] = N
         while affected and round_no < config.max_rounds:
             round_no += 1
             objecting_ids = []
-            for sid in affected:
+            # All demanders participate on severe days — not just the affected subset.
+            # Non-affected agents can ACCEPT (cooperative signal) or PROPOSE_TRADE
+            # (offer surplus to a needy peer). Restricting moves to only affected agents
+            # suppresses all cooperation/trade signals from surplus holders.
+            for sid in demander_ids:
                 move = negotiation_move(
                     STAKEHOLDER_BY_ID[sid], day, round_no,
                     requested_units[sid], min_acceptable[sid], allocation[sid],
