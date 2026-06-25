@@ -1,0 +1,10 @@
+Remake how agents can be punished if they will not cooperate,
+For example if they will not cooperate at least (some 3 iteration ,or 1 day, or smth they not gonna get water at all)
+
+the main problem that we can see,it is If we have hospital,probably it is more crucial ,for it to have water
+
+
+than we add 2 - 3 crucial agents,so they must cooperate but at the same time they can cooperate just with themslefs
+
+so add one more rule,punish if no cooperation with others! Not only with same class!
+
