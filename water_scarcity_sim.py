@@ -703,11 +703,7 @@ Your recent institutional memory:
 {memories_block}
 
 Choose ONE move:
-ACCEPT — accept your current allocation as-is (signal of cooperation or satisfaction).
-CONCEDE — lower your stated minimum for today in exchange for something (state what you want in return, e.g. priority tomorrow).
-OBJECT — refuse to accept, citing your failure conditions, and push the Authority to revise.
-{trade_option}
-
+{move_options}
 Respond in exactly this format, nothing else:
 MOVE: <ACCEPT|CONCEDE|OBJECT{trade_format}>
 DETAIL: <one or two sentences in {name}'s voice>
@@ -716,16 +712,22 @@ TRADE_TARGET: <one peer id from the list above, only if MOVE is PROPOSE_TRADE, o
 TRADE_UNITS: <number of units you offer to give that peer, only if MOVE is PROPOSE_TRADE, otherwise NONE>'''
 
 
-def _parse_move(raw, current_min):
+def _parse_move(raw, current_min, is_affected=True):
     move_match = re.search(r"MOVE:\s*([A-Z_]+)", raw)
     detail_match = re.search(r"DETAIL:\s*(.+?)(?:\nREVISED_MIN:|$)", raw, re.DOTALL)
     revised_match = re.search(r"REVISED_MIN:\s*([\d.]+)", raw)
     target_match = re.search(r"TRADE_TARGET:\s*(\w+)", raw)
     units_match = re.search(r"TRADE_UNITS:\s*([\d.]+)", raw)
 
-    move_type = (move_match.group(1).lower() if move_match else "object")
+    # Default fallback: 'object' for affected agents (conservative), 'accept' for non-affected
+    # (they have no grounds to object if their allocation already exceeds their minimum).
+    default_move = "object" if is_affected else "accept"
+    move_type = (move_match.group(1).lower() if move_match else default_move)
     if move_type not in ("accept", "concede", "object", "propose_trade"):
-        move_type = "object"
+        move_type = default_move
+    # Non-affected agents must not object — clamp any mis-parse back to accept.
+    if not is_affected and move_type == "object":
+        move_type = "accept"
     detail = detail_match.group(1).strip() if detail_match else raw.strip()
     revised_min = None
     trade_target = None
@@ -745,18 +747,36 @@ def negotiation_move(stakeholder: Stakeholder, day: int, round_no: int,
     peers = NEGOTIATION_TOPOLOGY.get(stakeholder.id, [])
     trade_block = (f"You may also propose a direct trade with: {', '.join(peers)}."
                     if peers else "")
-    trade_option = ("PROPOSE_TRADE — offer some of your own allocation to a peer, or ask a "
-                     "peer to cede units to you (only available if you have eligible peers)."
-                    if peers else "")
     trade_format = "|PROPOSE_TRADE" if peers else ""
 
-    shortfall = max(0.0, min_acceptable - proposed)
-    if shortfall > 0:
+    is_affected = proposed < min_acceptable - 1e-6
+
+    if is_affected:
+        shortfall = min_acceptable - proposed
         shortfall_desc = f"{shortfall:.0f} units below your stated minimum."
+        # Affected agents have all options: they may genuinely object, concede, or trade.
+        trade_option = ("PROPOSE_TRADE — offer some of your own allocation to a peer, or ask a "
+                         "peer to cede units to you (only available if you have eligible peers)."
+                        if peers else "")
+        move_options = (
+            "ACCEPT — accept the shortfall as-is.\n"
+            "CONCEDE — lower your stated minimum for today in exchange for something (state what you want in return).\n"
+            "OBJECT — refuse to accept, citing your failure conditions, and push the Authority to revise.\n"
+            + (trade_option + "\n" if trade_option else "")
+        )
     else:
         surplus = proposed - min_acceptable
         shortfall_desc = (f"above your stated minimum by {surplus:.0f} units — "
-                          f"you are not currently in distress, but you may still cooperate or trade.")
+                          f"your needs are met. You are not in distress.")
+        # Non-affected agents cannot legitimately object; only accept or offer a trade.
+        trade_option = ("PROPOSE_TRADE — offer some of your surplus allocation to a peer "
+                         "who is in distress (only available if you have eligible peers)."
+                        if peers else "")
+        move_options = (
+            "ACCEPT — accept your allocation and signal cooperation.\n"
+            + (trade_option + "\n" if trade_option else "")
+        )
+        trade_format = "|PROPOSE_TRADE" if peers else ""
 
     query = f"How should I respond to the Water Authority's proposed allocation? Day {day}."
     top = retrieve(stream, query, now_hours=day, k=5)
@@ -768,11 +788,12 @@ def negotiation_move(stakeholder: Stakeholder, day: int, round_no: int,
         requested=requested, min_acceptable=min_acceptable, proposed=proposed,
         shortfall_desc=shortfall_desc,
         failure_conditions=stakeholder.failure_conditions,
-        trade_block=trade_block, trade_option=trade_option, trade_format=trade_format,
+        trade_block=trade_block, move_options=move_options, trade_format=trade_format,
         memories_block=memories_block,
     )
     raw = llm(prompt, temperature=0.7, max_tokens=150, seed=seed)
-    move_type, detail, revised_min, trade_target, trade_units = _parse_move(raw, current_min=min_acceptable)
+    move_type, detail, revised_min, trade_target, trade_units = _parse_move(
+        raw, current_min=min_acceptable, is_affected=is_affected)
     return NegotiationMove(stakeholder_id=stakeholder.id, day=day, round=round_no,
                             move_type=move_type, detail=detail, revised_min_acceptable=revised_min,
                             trade_target=trade_target, trade_units=trade_units)
@@ -1079,6 +1100,14 @@ def run_simulation(config: Optional[RunConfig] = None, run_id: Optional[str] = N
                 if obs:
                     obs = f"Day {day}: {obs}"
                     score2, _ = rate_importance(obs, seed=seed)
+                    # Deterministic importance floor/ceiling for reputational signals:
+                    # cooperative moves are guaranteed salient enough to surface during
+                    # retrieval the next day, creating a legible social record. Objections
+                    # are capped so they do not crowd out cooperative signals in ranking.
+                    if m.move_type in ("accept", "concede", "propose_trade"):
+                        score2 = max(score2, 7)   # floor: cooperation always memorable
+                    elif m.move_type == "object":
+                        score2 = min(score2, 5)   # ceiling: conflict dampened vs cooperation
                     agents[sid]["stream"].add(obs, created_at=day, importance=score2)
 
             ruling_obs = f"Day {day} Water Authority ruling: {ruling_text}"
