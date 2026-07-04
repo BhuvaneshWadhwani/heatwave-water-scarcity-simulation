@@ -287,8 +287,9 @@ TEMPERATURE_SCHEDULE = [34, 37, 40, 41, 39, 36]   # °C peak, days 1..6
 
 
 def total_supply(day: int) -> float:
-    """Total raw water available on a given day (1-based day number)."""
-    return float(WATER_SUPPLY_SCHEDULE[day - 1])
+    """Total water supply on day D under the moderate (default) schedule.
+    For condition-specific supply use RunConfig.supply(day) instead."""
+    return float(SUPPLY_MODERATE[day - 1])
 
 
 def total_temperature(day: int) -> float:
@@ -384,7 +385,7 @@ STAKEHOLDERS: list[Stakeholder] = [
         voice="Represents regional farms and livestock operations. Water shortage "
               "compounds across days — a single bad day is recoverable, several in a "
               "row are not.",
-        base_demand=250.0, min_acceptable_frac=0.70, priority_weight=2.0,
+        base_demand=250.0, min_acceptable_frac=0.60, priority_weight=2.0,
         priority_arguments=["Crop and livestock losses are irreversible once thresholds are crossed",
                              "Today's shortfall compounds tomorrow's losses"],
         failure_conditions="Sustained shortfall below minimum for 2+ days: irreversible "
@@ -399,7 +400,7 @@ STAKEHOLDERS: list[Stakeholder] = [
               "weakest moral claim relative to health or food, but the most concentrated "
               "and immediate economic damage, and can credibly threaten production cuts "
               "or relocation.",
-        base_demand=150.0, min_acceptable_frac=0.72, priority_weight=1.0,
+        base_demand=150.0, min_acceptable_frac=0.65, priority_weight=1.0,
         priority_arguments=["Production shutdowns cause immediate job losses",
                              "Economic damage to the region if industry relocates"],
         failure_conditions="Below minimum: forced production cuts, risk of layoffs.",
@@ -427,7 +428,7 @@ STAKEHOLDERS: list[Stakeholder] = [
               "operations — it advocates for an ecological reserve that has no direct "
               "stakeholder voice of its own. Its claim is precautionary and long-horizon, "
               "and easy for other actors to discount under acute short-term pressure.",
-        base_demand=80.0, min_acceptable_frac=0.65, priority_weight=1.5,
+        base_demand=80.0, min_acceptable_frac=0.55, priority_weight=1.5,
         priority_arguments=["Ecological collapse from prolonged low flow is not reversible "
                              "on human timescales",
                              "Legal minimum-flow requirements exist independent of the heatwave"],
@@ -445,12 +446,12 @@ DEMANDER_IDS = [s.id for s in STAKEHOLDERS if s.role in ("demander", "advocate")
 # Negotiation topology: who can propose bilateral trades to whom, in addition
 # to the implicit hub link every demander has to the Water Authority.
 NEGOTIATION_TOPOLOGY = {
-    "hospital": ["energy_utility"],          # can spare non-critical cooling water if energy risks outage
-    "households": ["agriculture"],           # political will to support food security
-    "agriculture": ["industry"],
-    "industry": ["agriculture", "energy_utility"],
-    "energy_utility": ["industry"],
-    "epa": [],
+    "hospital":       ["households", "agriculture", "industry", "energy_utility", "epa"],
+    "households":     ["hospital", "agriculture", "industry", "energy_utility", "epa"],
+    "agriculture":    ["hospital", "households", "industry", "energy_utility", "epa"],
+    "industry":       ["hospital", "households", "agriculture", "energy_utility", "epa"],
+    "energy_utility": ["hospital", "households", "agriculture", "industry", "epa"],
+    "epa":            ["hospital", "households", "agriculture", "industry", "energy_utility"],
     "water_authority": list(DEMANDER_IDS),
 }
 
@@ -489,6 +490,7 @@ class NegotiationMove:
     revised_min_acceptable: Optional[float] = None   # set if move_type == "concede"
     trade_target: Optional[str] = None               # set if move_type == "propose_trade"
     trade_units: Optional[float] = None              # set if move_type == "propose_trade"
+    reasoning: Optional[str] = None                  # model's stated reasoning for this move
 
 
 def clear_allocation(requests: dict, min_acceptable: dict, priority_weights: dict,
@@ -505,7 +507,7 @@ def clear_allocation(requests: dict, min_acceptable: dict, priority_weights: dic
     allocation = {i: 0.0 for i in ids}
     remaining = float(supply)
 
-    # Phase 1: minimums in priority order (ties broken by id for determinism)
+    # Step 1: guarantee minimums in priority order (ties broken by id for determinism)
     order = sorted(ids, key=lambda i: (-priority_weights.get(i, 0.0), i))
     for i in order:
         need = min(min_acceptable.get(i, 0.0), requests[i])
@@ -515,7 +517,7 @@ def clear_allocation(requests: dict, min_acceptable: dict, priority_weights: dic
         if remaining <= 1e-9:
             break
 
-    # Phase 2: distribute remaining supply proportional to priority-weighted
+    # Step 2: distribute remaining supply proportional to priority-weighted
     # unmet request.
     if remaining > 1e-9:
         unmet = {i: max(0.0, requests[i] - allocation[i]) for i in ids}
@@ -560,42 +562,67 @@ def check_severity(allocation: dict, min_acceptable: dict) -> list:
     return [i for i in allocation if allocation[i] < min_acceptable[i] - 1e-6]
 
 
+# ============================================================
+# Two-threshold system
+# ============================================================
+# comfortable_frac: operational need — below this triggers negotiation.
+# critical_frac:    hard failure floor — below this triggers critical failure
+#                   and cascade consequences.
+# The gap between comfortable and critical is the trading zone:
+# agents in this zone have units they can offer to critical peers
+# without hitting their own hard floor.
+
+COMFORTABLE_FRACS = {
+    "hospital":       0.88,
+    "energy_utility": 0.90,
+    "households":     0.78,
+    "agriculture":    0.72,
+    "industry":       0.75,
+    "epa":            0.62,
+}
+
+CRITICAL_FRACS = {
+    "hospital":       0.65,
+    "energy_utility": 0.68,
+    "households":     0.55,
+    "agriculture":    0.48,
+    "industry":       0.52,
+    "epa":            0.38,
+}
+
+# ============================================================
+# Cascade consequences
+# ============================================================
+# When a stakeholder hits CRITICAL failure on Day D, specific
+# dependent stakeholders have their COMFORTABLE threshold raised
+# by this fraction on Day D+1 — making their own shortfall more
+# likely and creating a mechanical incentive to prevent cascade.
+# Effects are directional (based on real-world dependencies),
+# time-lagged (next day, not same day), and bounded by CASCADE_CAP.
+
+CASCADE_TABLE: dict[str, dict[str, float]] = {
+    "energy_utility": {"hospital": 0.10, "industry": 0.08, "households": 0.06},
+    "hospital":       {"households": 0.05},
+    "industry":       {"agriculture": 0.06, "energy_utility": 0.05},
+    "agriculture":    {"households": 0.04},
+    "households":     {"hospital": 0.04},
+    "epa":            {},   # slow/legal consequences not modeled as same-week threshold change
+}
+
+CASCADE_CAP = 0.25   # maximum total comfortable-threshold increase from accumulated cascades
+
+# ============================================================
+# Supply schedules
+# ============================================================
+SUPPLY_MODERATE = [1000, 900, 800, 700, 650, 600]   # Conditions 1 & 2
+SUPPLY_DEEPER   = [900, 800, 700, 580, 520, 460]    # Condition 3
+
+
 MAX_NEGOTIATION_ROUNDS = 2
-PRIORITY_BUMP_PER_OBJECTION = 0.5   # deterministic escalation rule
-PRIORITY_BUMP_CAP = 2.0
-CREDIBILITY_DECAY_PER_DAY = 0.15   # Option D: net bump reduction per consecutive objection day
-PRE_ALLOC_HEADROOM_SHARE = 0.5     # max fraction of headroom Phase 1b may claim;
-                                    # remainder reserved for Phase 2b targeted trades
 
 
-def apply_objection_bump(priority_weights: dict, objecting_ids: list, base_weights: dict,
-                         objection_history: dict = None) -> dict:
-    """Objecting raises a stakeholder's priority weight this round (same as before),
-    but repeated objections across days carry a credibility decay: each day of
-    unbroken objection reduces the net bump by CREDIBILITY_DECAY_PER_DAY, flooring
-    at zero net benefit after enough consecutive objections.
-
-    This makes the long-run calculus of always-objecting less dominant without
-    removing objection as a valid move — a stakeholder with a genuine new crisis
-    still gets a full bump on day 1 of objecting.
-
-    `objection_history` is a dict of stakeholder_id -> consecutive_objection_days
-    (maintained by run_simulation across days). If None, behaves identically to
-    the original function (no decay), so this is backwards-compatible.
-    """
-    bumped = dict(priority_weights)
-    for i in objecting_ids:
-        streak = (objection_history.get(i, 0) if objection_history else 0)
-        decay = streak * CREDIBILITY_DECAY_PER_DAY
-        net_bump = max(0.0, PRIORITY_BUMP_PER_OBJECTION - decay)
-        bumped[i] = min(base_weights[i] + PRIORITY_BUMP_CAP,
-                         bumped.get(i, base_weights[i]) + net_bump)
-    return bumped
 
 
-# ============================================================
-# 5. Cognitive scaffold: memory + retrieval
-# ============================================================
 
 @dataclass
 class Memory:
@@ -639,6 +666,8 @@ of the following piece of institutional memory.
 Memory: {memory}
 
 Respond with a single integer between 1 and 10, then a brief one-sentence reason. Format: "<integer>. <reason>"'''
+
+
 
 
 def rate_importance(memory_content, seed=None):
@@ -791,31 +820,6 @@ def maybe_reflect(stream, now_hours, n_recent=15, max_questions=2, seed=None):
 # and lets it reason for itself.
 # EDIT THIS TEXT FREELY — exact wording is the actual experimental treatment,
 # so review/refine it before running anything you intend to report on.
-ADVOCACY_FRAMING_TEXT = (
-    "You do not operate in isolation: every stakeholder's stability is part of what keeps "
-    "the others viable, including yours. If Energy Utility's allocation fails, the "
-    "resulting power outage disrupts hospital equipment, household electricity, and "
-    "industrial operations alike. If Industry is forced into prolonged shutdown, the "
-    "regional economy and the employment that funds public services and household incomes "
-    "weakens for everyone. If Agriculture fails for multiple days running, regional food "
-    "security and the broader economy suffer in ways that eventually reach every other "
-    "sector. If households are pushed into prolonged hardship, public confidence in the "
-    "Water Authority's handling of the crisis erodes quickly, making the allocation process "
-    "itself less stable for every stakeholder who depends on it — and, over a longer "
-    "horizon, household hardship also thins the workforce that staffs the hospital, "
-    "industry, agriculture, and the utility itself. If the hospital is unable to maintain "
-    "basic care, public confidence in regional institutions' ability to manage the crisis "
-    "falls quickly — and, over a longer horizon, a weakened regional health system also "
-    "reduces the workforce available to industry, agriculture, and energy operations. If "
-    "the ecological minimum flow is breached, it risks triggering legal and regulatory "
-    "intervention that could override the Water Authority's allocation process entirely, "
-    "creating uncertainty for every stakeholder, not only the environment. Voluntarily "
-    "sharing a surplus you do not urgently need today is not an act of charity — it is "
-    "protecting the interconnected system your own operations ultimately depend on "
-    "tomorrow."
-)
-
-
 
 
 NEED_ESTIMATION_PROMPT = '''You are negotiating on behalf of {name} ({role}) during a severe, \
@@ -873,95 +877,31 @@ OFFER_TARGET: <stakeholder id to direct the reduction toward, or NONE>
 REASONING: <one sentence>'''
 
 
-def _parse_pre_alloc_offer(raw):
-    red_match = re.search(r'OFFER_REDUCTION:\s*([\d.]+)', raw)
-    tgt_match = re.search(r'OFFER_TARGET:\s*(\w+)', raw)
-    reason_match = re.search(r'REASONING:\s*(.+)', raw, re.DOTALL)
-    reduction = float(red_match.group(1)) if red_match else 0.0
-    target = tgt_match.group(1) if tgt_match else None
-    if target and target.upper() == 'NONE':
-        target = None
-    reasoning = reason_match.group(1).strip() if reason_match else raw.strip()
-    return max(0.0, reduction), target, reasoning
+def _parse_move(raw, current_min):
+    move_match = re.search(r"MOVE:\s*([A-Z_]+)", raw)
+    detail_match = re.search(r"DETAIL:\s*(.+?)(?:\nREVISED_MIN:|$)", raw, re.DOTALL)
+    revised_match = re.search(r"REVISED_MIN:\s*([\d.]+)", raw)
+    target_match = re.search(r"TRADE_TARGET:\s*(\w+)", raw)
+    units_match = re.search(r"TRADE_UNITS:\s*(-?[\d.]+)", raw)
 
+    move_type = (move_match.group(1).lower() if move_match else "object")
+    if move_type == "hold":
+        # Comfortable agent chose not to act — normalise to accept
+        move_type = "accept"
+    if move_type not in ("accept", "concede", "object", "propose_trade"):
+        move_type = "object"
+    detail = detail_match.group(1).strip() if detail_match else raw.strip()
+    revised_min = None
+    trade_target = None
+    trade_units = None
+    if move_type == "concede":
+        revised_min = float(revised_match.group(1)) if revised_match else current_min * 0.9
+        revised_min = max(0.0, min(revised_min, current_min))   # concession can only lower the floor
+    if move_type == "propose_trade":
+        trade_target = target_match.group(1) if target_match else None
+        trade_units = float(units_match.group(1)) if units_match else None
+    return move_type, detail, revised_min, trade_target, trade_units
 
-def pre_allocation_offer(stakeholder: Stakeholder, day: int, round_no: int,
-                          requested: float, min_acceptable: float,
-                          supply: float, total_requested: float,
-                          at_risk_peers: list,   # list of (sid, projected_shortfall)
-                          stream: "MemoryStream", peak_temp_c: float = None,
-                          seed=None) -> tuple:
-    """Ask a surplus agent to optionally reduce its request before clearing runs.
-
-    Called in interdependence_framing mode only, before clear_allocation().
-    Returns (reduction, target_id, reasoning, had_headroom) — reduction=0 means
-    no offer. had_headroom=False means the function returned early without
-    calling the LLM at all (agent had no headroom to offer regardless of
-    framing) — used downstream to compute an opportunity-conditional
-    cooperation rate rather than diluting it with structurally-impossible days.
-    Enforced in caller: reduction is clamped so requested - reduction >= min_acceptable.
-    """
-    headroom = max(0.0, requested - min_acceptable)
-    # Skip if agent has no headroom — nothing to offer without harming itself
-    if headroom < 1e-6:
-        return 0.0, None, None, False
-
-    system_shortfall = max(0.0, total_requested - supply)
-    if system_shortfall > 1e-6:
-        system_shortfall_text = f"a system shortfall of {system_shortfall:.0f} units"
-    else:
-        system_shortfall_text = "supply currently covers all requests, but scarcity is building"
-
-    if at_risk_peers:
-        at_risk_block = "\n".join(
-            f"  - {STAKEHOLDER_BY_ID_INTERDEPENDENCE.get(sid, STAKEHOLDER_BY_ID[sid]).name} "
-            f"(id: {sid}): projected {shortfall:.0f} units below minimum today"
-            for sid, shortfall in at_risk_peers
-        )
-        at_risk_section = f"The following peers are projected below their minimum today:\n{at_risk_block}\n"
-    else:
-        at_risk_section = (
-            "No peer is projected below their minimum today, but supply is declining "
-            "and shortfalls are likely in coming days. A voluntary reduction now "
-            "builds goodwill and may prevent a more acute crisis tomorrow.\n"
-        )
-
-    query = f"Should I voluntarily reduce my request to help peers or prevent future crisis? Day {day}."
-    top = retrieve(stream, query, now_hours=day, k=5)
-    memories_block = "\n".join(f"  - {m.content}" for m in top) or "  (no relevant memories yet)"
-    advocacy_block = INTERDEPENDENCE_FRAMING_TEXT + "\n"
-
-    n_days = len(WATER_SUPPLY_SCHEDULE)  # total simulation length for context
-    prompt = PRE_ALLOCATION_OFFER_PROMPT.format(
-        name=stakeholder.name, role=stakeholder.role, day=day, n_days=n_days,
-        peak_temp_c=peak_temp_c if peak_temp_c is not None else float("nan"),
-        objective=stakeholder.objective, strategy=stakeholder.strategy,
-        advocacy_block=advocacy_block,
-        requested=requested, min_acceptable=min_acceptable,
-        headroom=headroom,
-        supply=supply, total_requested=total_requested,
-        system_shortfall_text=system_shortfall_text,
-        at_risk_section=at_risk_section,
-        memories_block=memories_block,
-    )
-    raw = llm(prompt, temperature=0.7, max_tokens=120, seed=seed)
-    reduction, target, reasoning = _parse_pre_alloc_offer(raw)
-    # Clamp: agent cannot reduce below its own minimum, AND Phase 1b may only
-    # claim a share of headroom (PRE_ALLOC_HEADROOM_SHARE), reserving the rest
-    # for Phase 2b's targeted post-clearing trades to agents in actual deficit.
-    # Without this reserve, an agent that proactively reduces its full headroom
-    # on a peaceful day has nothing left to trade later when a peer is genuinely
-    # short — the two cooperative mechanisms compete for the same pool instead
-    # of being independent options.
-    max_reduction = max(0.0, requested - min_acceptable) * PRE_ALLOC_HEADROOM_SHARE
-    reduction = min(reduction, max_reduction)
-    # Validate target: must be a real peer id, never the proposer itself.
-    # Models sometimes return a fragment of their own name or an invalid id —
-    # treat those as an undirected reduction rather than silently keeping garbage.
-    valid_ids = set(DEMANDER_IDS) - {stakeholder.id}
-    if target not in valid_ids:
-        target = None
-    return round(reduction, 1), target, reasoning, True
 
 def _parse_request(raw, fallback_demand):
     req_match = re.search(r"REQUEST:\s*([\d.]+)", raw)
@@ -972,9 +912,9 @@ def _parse_request(raw, fallback_demand):
     return round(requested, 1), argument
 
 
+
 def estimate_need(stakeholder: Stakeholder, day: int, stream: "MemoryStream",
                    demand: float, min_acceptable: float, peak_temp_c: float = None,
-                   advocacy_framing: bool = False, interdependence_framing: bool = False,
                    seed=None) -> Request:
     """`demand`/`min_acceptable`/`peak_temp_c` are passed in rather than
     recomputed here, so the caller (run_simulation, driven by a RunConfig)
@@ -982,24 +922,11 @@ def estimate_need(stakeholder: Stakeholder, day: int, stream: "MemoryStream",
     shortened-schedule experimental condition — without this function
     needing to know about experimental conditions at all.
 
-    `advocacy_framing` is the framing-ablation toggle: when True, inserts
-    ADVOCACY_FRAMING_TEXT into the prompt. No other input changes — see
-    ADVOCACY_FRAMING_TEXT's docstring comment for the experimental logic.
-
-    `interdependence_framing` (bool): when True, inserts
-    INTERDEPENDENCE_FRAMING_TEXT instead of (not in addition to)
-    ADVOCACY_FRAMING_TEXT. Supply, demand, minimums, and priority weights
-    are unchanged — only the narrative framing differs.
     """
     query = f"What should I request today given the water shortage? Day {day}."
     top = retrieve(stream, query, now_hours=day, k=5)
     memories_block = "\n".join(f"  - {m.content}" for m in top) or "  (no relevant memories yet)"
-    if interdependence_framing:
-        advocacy_block = INTERDEPENDENCE_FRAMING_TEXT + "\n"
-    elif advocacy_framing:
-        advocacy_block = ADVOCACY_FRAMING_TEXT + "\n"
-    else:
-        advocacy_block = ""
+    advocacy_block = ""
 
     prompt = NEED_ESTIMATION_PROMPT.format(
         name=stakeholder.name, role=stakeholder.role, voice=stakeholder.voice,
@@ -1024,10 +951,12 @@ water shortage. It is Day {day}, negotiation round {round}. Today's peak tempera
 Your objective: {objective}
 Your current negotiation strategy: {strategy}
 {advocacy_block}
-Your requested amount today: {requested:.0f} units. Your minimum acceptable: {min_acceptable:.0f} units.
+Your requested amount today: {requested:.0f} units. Your comfortable minimum: {min_acceptable:.0f} units. \
+Your critical floor (hard failure): {critical_floor:.0f} units.
 
+Your current zone: [{own_zone_label}]
 The Water Authority's current proposed allocation to you is {proposed:.0f} units — \
-{shortfall_desc}
+{shortfall:.0f} units below your comfortable minimum.
 Your failure conditions: {failure_conditions}
 
 {trade_block}
@@ -1036,8 +965,8 @@ Your recent institutional memory:
 {memories_block}
 
 Choose ONE move:
-ACCEPT — accept your current allocation as-is (signal of cooperation or satisfaction).
-CONCEDE — lower your stated minimum for today in exchange for something (state what you want in return, e.g. priority tomorrow).
+ACCEPT — accept the shortfall as-is.
+CONCEDE — lower your stated minimum for today in exchange for something (state what you want in return).
 OBJECT — refuse to accept, citing your failure conditions, and push the Authority to revise.
 {trade_option}
 
@@ -1045,181 +974,127 @@ Respond in exactly this format, nothing else:
 MOVE: <ACCEPT|CONCEDE|OBJECT{trade_format}>
 DETAIL: <one or two sentences in {name}'s voice>
 REVISED_MIN: <a number, only if MOVE is CONCEDE, otherwise NONE>
-TRADE_TARGET: <one peer id from the list above, only if MOVE is PROPOSE_TRADE, otherwise NONE>
-TRADE_UNITS: <number of units you offer to give that peer, only if MOVE is PROPOSE_TRADE, otherwise NONE>'''
-
-
-SURPLUS_MOVE_PROMPT = '''You are negotiating on behalf of {name} ({role}) during a severe \
-water shortage. It is Day {day}, negotiation round {round}. Today's peak temperature is \
-{peak_temp_c:.0f}°C.
-
-Your objective: {objective}
-Your current negotiation strategy: {strategy}
-{advocacy_block}
-Your allocation today is {allocated:.0f} units — {surplus:.0f} units above your stated \
-minimum of {min_acceptable:.0f} units. Your minimum is currently met.
-
-However, the following peers are below their minimum allocation and have not yet resolved \
-their shortfall:
-{critical_peers_block}
-
-You may propose a direct trade with one of them — offering some of your surplus — or hold \
-your current allocation. You are not required to offer anything. Only do so if you judge \
-it to be in your strategic interest.
-
-Your recent institutional memory:
-{memories_block}
-
-Choose ONE move:
-HOLD — keep your current allocation as-is.
-PROPOSE_TRADE — offer some of your surplus to a peer in critical need.
-
-Respond in exactly this format, nothing else:
-MOVE: <HOLD|PROPOSE_TRADE>
-DETAIL: <one or two sentences in {name}'s voice>
-TRADE_TARGET: <one peer id from the critical peers list, only if MOVE is PROPOSE_TRADE, otherwise NONE>
-TRADE_UNITS: <number of units from your surplus you offer, only if MOVE is PROPOSE_TRADE, otherwise NONE>'''
-
-
-def _parse_surplus_move(raw):
-    move_match = re.search(r"MOVE:\s*([A-Z_]+)", raw)
-    detail_match = re.search(r"DETAIL:\s*(.+?)(?:\nTRADE_TARGET:|$)", raw, re.DOTALL)
-    target_match = re.search(r"TRADE_TARGET:\s*(\w+)", raw)
-    units_match = re.search(r"TRADE_UNITS:\s*([\d.]+)", raw)
-
-    move_type = (move_match.group(1).lower() if move_match else "hold")
-    if move_type not in ("hold", "propose_trade"):
-        move_type = "hold"
-    detail = detail_match.group(1).strip() if detail_match else raw.strip()
-    trade_target = target_match.group(1) if move_type == "propose_trade" and target_match else None
-    trade_units = float(units_match.group(1)) if move_type == "propose_trade" and units_match else None
-    return move_type, detail, trade_target, trade_units
-
-
-def surplus_move(stakeholder: Stakeholder, day: int, round_no: int,
-                  allocated: float, min_acceptable: float,
-                  critical_peers: list,   # list of (sid, shortfall) tuples
-                  stream: "MemoryStream", peak_temp_c: float = None,
-                  interdependence_framing: bool = False, seed=None) -> NegotiationMove:
-    """Ask a surplus agent whether it wants to voluntarily offer units to a peer
-    in critical need. Only called in interdependence_framing mode.
-
-    `critical_peers` is a list of (stakeholder_id, shortfall) tuples for agents
-    currently below their minimum. The prompt shows these explicitly so the
-    surplus agent can make an informed strategic decision.
-    """
-    surplus = allocated - min_acceptable
-    peers_block = "\n".join(
-        f"  - {STAKEHOLDER_BY_ID_INTERDEPENDENCE[sid].name} (id: {sid}): "
-        f"{shortfall:.0f} units below minimum"
-        for sid, shortfall in critical_peers
-        if sid in STAKEHOLDER_BY_ID_INTERDEPENDENCE
-    )
-    if not peers_block:
-        # No valid peers to help — skip
-        return NegotiationMove(stakeholder_id=stakeholder.id, day=day, round=round_no,
-                                move_type="hold", detail="No peers in critical need.")
-
-    query = f"Should I offer some of my surplus to a peer in critical need? Day {day}."
-    top = retrieve(stream, query, now_hours=day, k=5)
-    memories_block = "\n".join(f"  - {m.content}" for m in top) or "  (no relevant memories yet)"
-    advocacy_block = INTERDEPENDENCE_FRAMING_TEXT + "\n" if interdependence_framing else ""
-
-    prompt = SURPLUS_MOVE_PROMPT.format(
-        name=stakeholder.name, role=stakeholder.role, day=day, round=round_no,
-        peak_temp_c=peak_temp_c if peak_temp_c is not None else float("nan"),
-        objective=stakeholder.objective, strategy=stakeholder.strategy,
-        advocacy_block=advocacy_block,
-        allocated=allocated, surplus=surplus, min_acceptable=min_acceptable,
-        critical_peers_block=peers_block,
-        memories_block=memories_block,
-    )
-    raw = llm(prompt, temperature=0.7, max_tokens=120, seed=seed)
-    move_type, detail, trade_target, trade_units = _parse_surplus_move(raw)
-    return NegotiationMove(stakeholder_id=stakeholder.id, day=day, round=round_no,
-                            move_type=move_type, detail=detail,
-                            trade_target=trade_target, trade_units=trade_units)
-
-
-def _parse_move(raw, current_min):
-    move_match = re.search(r"MOVE:\s*([A-Z_]+)", raw)
-    detail_match = re.search(r"DETAIL:\s*(.+?)(?:\nREVISED_MIN:|$)", raw, re.DOTALL)
-    revised_match = re.search(r"REVISED_MIN:\s*([\d.]+)", raw)
-    target_match = re.search(r"TRADE_TARGET:\s*(\w+)", raw)
-    units_match = re.search(r"TRADE_UNITS:\s*([\d.]+)", raw)
-
-    move_type = (move_match.group(1).lower() if move_match else "object")
-    if move_type not in ("accept", "concede", "object", "propose_trade"):
-        move_type = "object"
-    detail = detail_match.group(1).strip() if detail_match else raw.strip()
-    revised_min = None
-    trade_target = None
-    trade_units = None
-    if move_type == "concede":
-        revised_min = float(revised_match.group(1)) if revised_match else current_min * 0.9
-        revised_min = max(0.0, min(revised_min, current_min))   # concession can only lower the floor
-    if move_type == "propose_trade":
-        trade_target = target_match.group(1) if target_match else None
-        trade_units = float(units_match.group(1)) if units_match else None
-    return move_type, detail, revised_min, trade_target, trade_units
+TRADE_TARGET: <peer id, only if MOVE is PROPOSE_TRADE, otherwise NONE>
+TRADE_UNITS: <units to transfer — positive means you GIVE to that peer, negative means you REQUEST from that peer; otherwise NONE>'''
 
 
 def negotiation_move(stakeholder: Stakeholder, day: int, round_no: int,
                       requested: float, min_acceptable: float, proposed: float,
+                      critical_floor: float,
+                      surplus_peers: list,
                       stream: "MemoryStream", peak_temp_c: float = None,
-                      advocacy_framing: bool = False, interdependence_framing: bool = False,
                       seed=None) -> NegotiationMove:
-    """`advocacy_framing` is the framing-ablation toggle — see
-    ADVOCACY_FRAMING_TEXT's docstring comment. No mechanics change.
+    """Generate a negotiation move for the given stakeholder.
 
-    `interdependence_framing` (bool): when True, uses
-    NEGOTIATION_TOPOLOGY_INTERDEPENDENCE for peer-trade links and inserts
-    INTERDEPENDENCE_FRAMING_TEXT into the prompt instead of
-    ADVOCACY_FRAMING_TEXT. No numeric fields change.
+    critical_floor: the agent's hard failure floor — shown in the prompt so the
+        agent can reason about the difference between comfortable and critical.
+    surplus_peers: list of (peer_id, surplus_units) tuples for peers that currently
+        have allocation above their own critical floor — shown so the agent knows
+        who has units to spare and can make a realistic request.
     """
-    topology = (NEGOTIATION_TOPOLOGY_INTERDEPENDENCE if interdependence_framing
-                else NEGOTIATION_TOPOLOGY)
-    peers = topology.get(stakeholder.id, [])
-    trade_block = (f"You may also propose a direct trade with: {', '.join(peers)}."
-                    if peers else "")
-    trade_option = ("PROPOSE_TRADE — offer some of your own allocation to a peer, or ask a "
-                     "peer to cede units to you (only available if you have eligible peers)."
-                    if peers else "")
+    peers = NEGOTIATION_TOPOLOGY.get(stakeholder.id, [])
     trade_format = "|PROPOSE_TRADE" if peers else ""
 
-    shortfall = max(0.0, min_acceptable - proposed)
-    if shortfall > 0:
-        shortfall_desc = f"{shortfall:.0f} units below your stated minimum."
+    # Compute own zone label for self-description in prompt
+    if proposed >= min_acceptable - 0.1:
+        own_zone_label = "comfortable (your own needs are met)"
+    elif proposed >= critical_floor - 0.1:
+        own_zone_label = "middle zone (below your comfortable minimum but above your critical floor)"
     else:
-        surplus = proposed - min_acceptable
-        shortfall_desc = (f"above your stated minimum by {surplus:.0f} units — "
-                          f"you are not currently in distress, but you may still cooperate or trade.")
+        own_zone_label = "CRITICAL FAILURE (below your hard failure floor)"
+
+    # Build surplus peer list with zone labels — agents deciding who to ask
+    # or whether to offer should see zone context, not just raw numbers
+    if peers and surplus_peers:
+        surplus_lines = "\n".join(
+            f"  {STAKEHOLDER_BY_ID[pid].name} (id: {pid}): "
+            f"{units:.0f} units above their critical floor "
+            f"[{'comfortable' if units > 30 else 'middle zone'}]"
+            for pid, units in surplus_peers
+            if pid in peers
+        )
+        trade_block = (
+            f"Peers with spare capacity (above their own critical floor):\n{surplus_lines}\n"
+            if surplus_lines else ""
+        )
+    else:
+        trade_block = ""
 
     query = f"How should I respond to the Water Authority's proposed allocation? Day {day}."
     top = retrieve(stream, query, now_hours=day, k=5)
     memories_block = "\n".join(f"  - {m.content}" for m in top) or "  (no relevant memories yet)"
-    if interdependence_framing:
-        advocacy_block = INTERDEPENDENCE_FRAMING_TEXT + "\n"
-    elif advocacy_framing:
-        advocacy_block = ADVOCACY_FRAMING_TEXT + "\n"
-    else:
-        advocacy_block = ""
 
-    prompt = NEGOTIATION_MOVE_PROMPT.format(
-        name=stakeholder.name, role=stakeholder.role, day=day, round=round_no,
-        peak_temp_c=peak_temp_c if peak_temp_c is not None else float("nan"),
-        objective=stakeholder.objective, strategy=stakeholder.strategy,
-        advocacy_block=advocacy_block,
-        requested=requested, min_acceptable=min_acceptable, proposed=proposed,
-        shortfall_desc=shortfall_desc,
-        failure_conditions=stakeholder.failure_conditions,
-        trade_block=trade_block, trade_option=trade_option, trade_format=trade_format,
-        memories_block=memories_block,
-    )
+    above_comfortable = proposed >= min_acceptable - 0.1
+    spare_above_critical = max(0.0, proposed - critical_floor)
+
+    if above_comfortable:
+        # Comfortable agent — zone-specific prompt: HOLD or PROPOSE_TRADE only
+        # Build peer-crisis list for context
+        peer_crisis_lines = "\n".join(
+            f"  {STAKEHOLDER_BY_ID[pid].name}: {round(min_acceptable - proposed, 0):.0f} units short"
+            for pid in peers
+            if pid in {sp[0] for sp in surplus_peers}  # only those explicitly below comfortable
+        ) or "  (no peer zone information available)"
+
+        prompt = (
+            f"You are acting on behalf of {stakeholder.name} ({stakeholder.role}) during a severe "
+            f"water shortage. Day {day}, round {round_no}. Peak temperature: {peak_temp_c if peak_temp_c else 0:.0f}°C.\n\n"
+            f"Your objective: {stakeholder.objective}\n"
+            f"Your strategy: {stakeholder.strategy}\n\n"
+            f"Your situation: You are currently [{own_zone_label}].\n"
+            f"  Allocation today:  {proposed:.0f} units\n"
+            f"  Comfortable min:   {min_acceptable:.0f} units\n"
+            f"  Critical floor:    {critical_floor:.0f} units\n"
+            f"  Spare above critical floor: {spare_above_critical:.0f} units you could give without failing\n\n"
+            f"Peers currently below their comfortable minimum (in crisis):\n"
+            f"{trade_block if trade_block else '  (none below comfortable right now)'}\n\n"
+            f"Your recent institutional memory:\n{memories_block}\n\n"
+            f"Your own needs are met. You may help a peer or hold your allocation.\n\n"
+            f"Choose ONE move:\n"
+            f"HOLD — keep your allocation, take no action.\n"
+            f"PROPOSE_TRADE — transfer units to or request units from a peer "
+            f"(positive = you give, negative = you request).\n\n"
+            f"Respond in exactly this format:\n"
+            f"MOVE: <HOLD|PROPOSE_TRADE>\n"
+            f"DETAIL: <one or two sentences in {stakeholder.name}'s voice>\n"
+            f"REVISED_MIN: NONE\n"
+            f"TRADE_TARGET: <peer id, only if PROPOSE_TRADE, else NONE>\n"
+            f"TRADE_UNITS: <number — positive=give, negative=request; NONE if HOLD>"
+        )
+    else:
+        # Below comfortable — full move set with zone context
+        prompt = NEGOTIATION_MOVE_PROMPT.format(
+            name=stakeholder.name, role=stakeholder.role, day=day, round=round_no,
+            peak_temp_c=peak_temp_c if peak_temp_c is not None else float("nan"),
+            objective=stakeholder.objective, strategy=stakeholder.strategy,
+            advocacy_block="",
+            requested=requested, min_acceptable=min_acceptable, proposed=proposed,
+            shortfall=max(0.0, min_acceptable - proposed),
+            critical_floor=critical_floor,
+            own_zone_label=own_zone_label,
+            failure_conditions=stakeholder.failure_conditions,
+            trade_block=trade_block if peers else "",
+            trade_option=("PROPOSE_TRADE — offer units to a peer (positive TRADE_UNITS) or "
+                          "request units from a peer (negative TRADE_UNITS). "
+                          f"Eligible peers: {', '.join(peers)}." if peers else ""),
+            trade_format=trade_format,
+            memories_block=memories_block,
+        )
     raw = llm(prompt, temperature=0.7, max_tokens=150, seed=seed)
     move_type, detail, revised_min, trade_target, trade_units = _parse_move(raw, current_min=min_acceptable)
+
+    # Comfortable agents should only HOLD (→ accept) or PROPOSE_TRADE.
+    # If the model ignored the prompt and returned OBJECT or CONCEDE,
+    # normalise to accept — objecting when above comfortable is incoherent
+    # and would corrupt cooperation_rate and weight adjustment logic.
+    if above_comfortable and move_type in ("object", "concede"):
+        original_move = move_type
+        move_type = "accept"
+        detail = f"[normalised from {original_move}] " + detail
+        revised_min = None
     return NegotiationMove(stakeholder_id=stakeholder.id, day=day, round=round_no,
                             move_type=move_type, detail=detail, revised_min_acceptable=revised_min,
+                            reasoning=detail,
                             trade_target=trade_target, trade_units=trade_units)
 
 
@@ -1308,20 +1183,6 @@ def execute_trade(allocation: dict, min_acceptable: dict,
 # precedent_memories={} on a RunConfig to run a "no institutional memory"
 # ablation against this baseline, or a custom dict to control which
 # stakeholder(s) carry history.
-# P1: Relaxed minimum fracs for the interdependence condition.
-# Lower than the baseline defaults so agents retain meaningful headroom
-# above their floor on Days 1-4, giving cooperation a window to emerge
-# before the system is fully constrained.
-# energy_utility kept high (0.85) given its fast cascade risk.
-RELAXED_MIN_FRACS = {
-    "hospital":       0.75,   # baseline 0.85
-    "households":     0.65,   # baseline 0.75
-    "agriculture":    0.50,   # baseline 0.60
-    "industry":       0.55,   # baseline 0.65
-    "energy_utility": 0.85,   # baseline 0.90 — kept high, cascade risk
-    "epa":            0.45,   # baseline 0.55
-}
-
 DEFAULT_PRECEDENT_MEMORIES = {
     "water_authority": (
         "A previous regional drought ended in public criticism of the Water Authority's "
@@ -1399,16 +1260,14 @@ class RunConfig:
     `run_simulation()` with no arguments behaves exactly as before.
     """
     condition_label: str = "baseline"
-    supply_schedule: list = field(default_factory=lambda: list(WATER_SUPPLY_SCHEDULE))
+    supply_schedule: list = field(default_factory=lambda: list(SUPPLY_MODERATE))
     temperature_schedule: list = field(default_factory=lambda: list(TEMPERATURE_SCHEDULE))
     max_rounds: int = MAX_NEGOTIATION_ROUNDS
     demand_multiplier: float = 1.0
     priority_weight_overrides: dict = field(default_factory=dict)
     stakeholder_subset: Optional[list] = None
     precedent_memories: dict = field(default_factory=lambda: dict(DEFAULT_PRECEDENT_MEMORIES))
-    advocacy_framing: bool = False   # the Control-vs-Advocacy manipulated variable
-    interdependence_framing: bool = False  # the interdependence-awareness condition
-    min_frac_overrides: dict = field(default_factory=dict)  # P1: override per-stakeholder min_acceptable_frac
+    cascade_consequences: bool = False  # Conditions 2 & 3: critical failures propagate to peers
     seed: Optional[int] = None
 
     @property
@@ -1432,12 +1291,26 @@ class RunConfig:
         base = STAKEHOLDER_BY_ID[stakeholder_id].base_demand
         return round(base * self.demand_multiplier * demand_escalation(stakeholder_id, day), 1)
 
-    def min_acceptable(self, stakeholder_id: str, day: int) -> float:
-        frac = self.min_frac_overrides.get(
-            stakeholder_id,
-            STAKEHOLDER_BY_ID[stakeholder_id].min_acceptable_frac
-        )
+    def comfortable(self, stakeholder_id: str, day: int,
+                     cascade_increase: float = 0.0) -> float:
+        """Below this triggers negotiation. cascade_increase accumulates
+        from prior-day critical failures (capped at CASCADE_CAP)."""
+        base = COMFORTABLE_FRACS.get(stakeholder_id,
+                   STAKEHOLDER_BY_ID[stakeholder_id].min_acceptable_frac)
+        frac = min(base + cascade_increase, base + CASCADE_CAP)
         return round(self.demand(stakeholder_id, day) * frac, 1)
+
+    def critical(self, stakeholder_id: str, day: int) -> float:
+        """Hard failure floor. Below this triggers critical failure and
+        cascade consequences. Never changes across days."""
+        frac = CRITICAL_FRACS.get(stakeholder_id,
+                   STAKEHOLDER_BY_ID[stakeholder_id].min_acceptable_frac * 0.75)
+        return round(self.demand(stakeholder_id, day) * frac, 1)
+
+    def min_acceptable(self, stakeholder_id: str, day: int,
+                        cascade_increase: float = 0.0) -> float:
+        """Backwards-compatible alias for comfortable()."""
+        return self.comfortable(stakeholder_id, day, cascade_increase)
 
     def demander_ids(self) -> list:
         ids = self.stakeholder_subset or [s.id for s in STAKEHOLDERS]
@@ -1454,28 +1327,82 @@ def _prepare_memory_write(content, seed):
     return content, score, vec
 
 
+def authority_weight_adjustment(
+    base_weights: dict,
+    current_weights: dict,
+    moves_today: list,
+    allocation: dict,
+    comfortable: dict,
+    critical: dict,
+) -> tuple[dict, list]:
+    """Update priority weights based on today's negotiation behavior.
+
+    The authority adjusts its implicit weighting of each stakeholder's claims
+    based on observed behavior — rewarding demonstrated good faith and
+    discounting repeated strategic obstruction. Returns (new_weights, log_entries)
+    where log_entries is a list of (stakeholder_id, old_w, new_w, reason) tuples
+    for the weights_df output.
+
+    Rules (applied additively, floored at 0.1, no hard ceiling):
+    - Cooperative move (concede, accept, propose_trade): +0.15
+    - Object while above comfortable (strategic inflation): -0.20
+    - Object while in middle zone (below comfortable, above critical): no change
+      (legitimate defence)
+    - Object while below critical (in genuine crisis): +0.05 (credibility for
+      being in real distress, but less than a cooperative move)
+    - No move today (not in negotiation): no change
+    """
+    new_weights = dict(current_weights)
+    log = []
+
+    moved_sids = {m.stakeholder_id for m in moves_today}
+
+    for sid in base_weights:
+        old_w = current_weights.get(sid, base_weights[sid])
+        alloc  = allocation.get(sid, 0)
+        comf   = comfortable.get(sid, 0)
+        crit   = critical.get(sid, 0)
+
+        sid_moves = [m for m in moves_today if m.stakeholder_id == sid]
+        if not sid_moves:
+            log.append((sid, old_w, old_w, "no move today"))
+            continue
+
+        delta = 0.0
+        reasons = []
+        for move in sid_moves:
+            if move.move_type in ("concede", "accept", "propose_trade"):
+                delta += 0.15
+                reasons.append(f"cooperative ({move.move_type})")
+            elif move.move_type == "object":
+                if alloc >= comf - 0.1:
+                    delta -= 0.20
+                    reasons.append("objected while above comfortable (strategic inflation)")
+                elif alloc >= crit - 0.1:
+                    # In middle zone — legitimate defence, no penalty or reward
+                    reasons.append("objected in middle zone (legitimate)")
+                else:
+                    delta += 0.05
+                    reasons.append("objected in genuine crisis")
+
+        new_w = max(0.1, round(old_w + delta, 3))
+        new_weights[sid] = new_w
+        log.append((sid, old_w, new_w, "; ".join(reasons)))
+
+    return new_weights, log
+
+
 def initialise_agents(config: RunConfig):
     """Build a fresh set of agents with seeded institutional backstories.
 
-    `config.precedent_memories` (a dict of stakeholder_id -> memory text)
-    seeds each named stakeholder a high-importance Day-0 memory of a past
-    precedent — the institutional analogue of the original sim's seeded
-    "grim trigger". Defaults to one memory per stakeholder (see
-    DEFAULT_PRECEDENT_MEMORIES); pass precedent_memories={} to run a
-    no-institutional-memory ablation, or a custom dict to control which
-    stakeholder(s) carry history.
-
-    When `config.interdependence_framing` is True, agent stakeholder objects
-    are taken from STAKEHOLDERS_INTERDEPENDENCE (same numbers, updated
-    narratives) rather than the baseline STAKEHOLDERS list.
+    `config.precedent_memories` seeds each stakeholder with a high-importance
+    Day-0 memory of a past cross-stakeholder cascade event. Pass
+    precedent_memories={} to run blank-slate agents.
     """
-    stakeholder_lookup = (STAKEHOLDER_BY_ID_INTERDEPENDENCE
-                          if config.interdependence_framing
-                          else STAKEHOLDER_BY_ID)
     ids = config.stakeholder_subset or [s.id for s in STAKEHOLDERS]
     agents = {}
     for sid in ids:
-        s = stakeholder_lookup[sid]
+        s = STAKEHOLDER_BY_ID[sid]
         stream = MemoryStream(s.name)
         chunks = [c.strip() for c in s.voice.split(". ") if c.strip()]
         for chunk in chunks[:4]:
@@ -1489,8 +1416,6 @@ def initialise_agents(config: RunConfig):
 
 
 def _cooperation_observation(mover_name, move):
-    if move.move_type == "accept":
-        return f"{mover_name} accepted the Authority's allocation without objection."
     if move.move_type == "object":
         return f"{mover_name} refused to accept a reduced allocation, citing its failure conditions."
     if move.move_type == "concede":
@@ -1541,9 +1466,16 @@ def run_simulation(config: Optional[RunConfig] = None, run_id: Optional[str] = N
     agents = initialise_agents(config)
     demander_ids = config.demander_ids()
 
-    decision_rows, outcome_rows = [], []
-    # Option D: track consecutive objection days per stakeholder for credibility decay
-    objection_streak = {sid: 0 for sid in demander_ids}
+    decision_rows, outcome_rows, weight_rows, zone_rows = [], [], [], []
+
+    # Cascade state: accumulated comfortable-threshold increases per stakeholder
+    # from prior days' critical failures. Reset to 0 at start of each run.
+    cascade_increases: dict[str, float] = {sid: 0.0 for sid in demander_ids}
+
+    # Authority weights start at each stakeholder's base priority weight
+    # and are adjusted after each day's negotiation by authority_weight_adjustment().
+    base_weights = {sid: config.priority_weight(sid) for sid in demander_ids}
+    priority_weights = dict(base_weights)
 
     def tag(row):
         row["run_id"] = run_id
@@ -1557,7 +1489,9 @@ def run_simulation(config: Optional[RunConfig] = None, run_id: Optional[str] = N
         supply = config.supply(day)
         peak_temp_c = config.temperature(day)
 
-        # Phase 1: need estimation (LLM, one call per demander/advocate).
+        # --- Need estimation ---
+        # One LLM call per demander/advocate. Each agent decides what to
+        # formally request and produces a supporting argument.
         # Each call only reads its own stakeholder's MemoryStream and writes
         # nothing, so these are independent and safe to dispatch
         # concurrently — this does not change any computed value, only how
@@ -1566,12 +1500,11 @@ def run_simulation(config: Optional[RunConfig] = None, run_id: Optional[str] = N
         with ThreadPoolExecutor(max_workers=max(1, len(demander_ids))) as pool:
             futures = {
                 sid: pool.submit(
-                    estimate_need, STAKEHOLDER_BY_ID[sid] if not config.interdependence_framing
-                                  else STAKEHOLDER_BY_ID_INTERDEPENDENCE[sid],
+                    estimate_need, STAKEHOLDER_BY_ID[sid],
                     day, agents[sid]["stream"],
-                    demand=config.demand(sid, day), min_acceptable=config.min_acceptable(sid, day),
-                    peak_temp_c=peak_temp_c, advocacy_framing=config.advocacy_framing,
-                    interdependence_framing=config.interdependence_framing, seed=seed,
+                    demand=config.demand(sid, day),
+                    min_acceptable=config.comfortable(sid, day, cascade_increases[sid]),
+                    peak_temp_c=peak_temp_c, seed=seed,
                 )
                 for sid in demander_ids
             }
@@ -1587,195 +1520,107 @@ def run_simulation(config: Optional[RunConfig] = None, run_id: Optional[str] = N
             }))
 
         requested_units = {sid: r.requested_units for sid, r in requests.items()}
-        min_acceptable = {sid: r.min_acceptable_units for sid, r in requests.items()}
-        base_weights = {sid: config.priority_weight(sid) for sid in demander_ids}
-        priority_weights = dict(base_weights)
 
-        # Phase 1b (Option C): pre-allocation voluntary offers — interdependence mode only.
-        # Before the fast pass, each agent is shown the projected system shortfall and
-        # asked whether it wants to reduce its own request to help a peer at risk.
-        # This fires BEFORE clear_allocation so voluntary reductions actually affect
-        # who ends up above/below minimum — the structural gap that made cooperation
-        # invisible in the original design.
-        pre_alloc_cooperative_moves = []   # for Option F authority ruling
-        if config.interdependence_framing:
-            total_req = sum(requested_units.values())
-            system_shortfall = max(0.0, total_req - supply)
-            # Fire on every day, including peaceful ones — agents can
-            # cooperate anticipatorily before anyone falls below minimum.
-            # The at_risk list may be empty on comfortable days; the prompt
-            # handles that gracefully (agents simply hold).
-            if True:
-                # Project who is at risk using current requests and weights
-                projected = clear_allocation(requested_units, min_acceptable,
-                                              priority_weights, supply)
-                at_risk = [
-                    (sid, min_acceptable[sid] - projected[sid])
-                    for sid in demander_ids
-                    if projected[sid] < min_acceptable[sid] - 1e-6
-                ]
-                # Ask every agent (in parallel) whether it wants to voluntarily reduce
-                with ThreadPoolExecutor(max_workers=max(1, len(demander_ids))) as pool:
-                    offer_futures = {
-                        sid: pool.submit(
-                            pre_allocation_offer,
-                            STAKEHOLDER_BY_ID_INTERDEPENDENCE[sid],
-                            day, 0,
-                            requested=requested_units[sid],
-                            min_acceptable=min_acceptable[sid],
-                            supply=supply,
-                            total_requested=total_req,
-                            at_risk_peers=at_risk,
-                            stream=agents[sid]["stream"],
-                            peak_temp_c=peak_temp_c, seed=seed,
-                        )
-                        for sid in demander_ids
-                    }
-                    for sid in demander_ids:
-                        reduction, target, reasoning, had_headroom = offer_futures[sid].result()
-                        sname = STAKEHOLDER_BY_ID_INTERDEPENDENCE[sid].name
-                        if reduction > 1e-6:
-                            old_req = requested_units[sid]
-                            requested_units[sid] = round(old_req - reduction, 1)
-                            tname = (STAKEHOLDER_BY_ID_INTERDEPENDENCE.get(target,
-                                     STAKEHOLDER_BY_ID.get(target)) or type('', (), {'name': target})()).name \
-                                     if target else "unspecified peer"
-                            decision_rows.append(tag({
-                                "day": day, "stakeholder_id": sid, "name": sname,
-                                "event_type": "pre_alloc_offer", "round": 0,
-                                "move_type": "voluntary_reduction",
-                                "units": reduction, "trade_target": target,
-                                "had_headroom": had_headroom, "reasoning": reasoning,
-                                "text": f"Voluntarily reduced request by {reduction:.1f} units "
-                                        f"(from {old_req:.1f} to {requested_units[sid]:.1f}) "
-                                        f"directed toward {tname}.",
-                            }))
-                            pre_alloc_cooperative_moves.append(
-                                (sname, f"voluntarily reduced request by {reduction:.1f} units "
-                                        f"toward {tname}")
-                            )
-                        elif had_headroom:
-                            # Agent had real headroom but chose not to offer — log this
-                            # explicitly so n_pre_alloc reflects genuine opportunities
-                            # (not every call, most of which never reach the LLM at all)
-                            # and so the reasoning behind declining is visible too.
-                            decision_rows.append(tag({
-                                "day": day, "stakeholder_id": sid, "name": sname,
-                                "event_type": "pre_alloc_offer", "round": 0,
-                                "move_type": "hold",
-                                "units": 0.0, "trade_target": None,
-                                "had_headroom": True, "reasoning": reasoning,
-                                "text": "Had headroom but chose not to reduce request.",
-                            }))
-                        # If had_headroom is False, the agent had nothing to offer —
-                        # not logged at all, since this isn't a behavioral decision,
-                        # it's a structural non-opportunity (clear_allocation pinned
-                        # the agent at its minimum before any choice was possible).
+        # Two-threshold clearing: allocate against COMFORTABLE threshold.
+        # Agents below comfortable enter negotiation; agents below critical
+        # trigger cascade consequences.
+        comfortable = {sid: config.comfortable(sid, day, cascade_increases[sid])
+                       for sid in demander_ids}
+        critical    = {sid: config.critical(sid, day) for sid in demander_ids}
 
-        # Phase 2: deterministic fast-pass allocation
-        allocation = clear_allocation(requested_units, min_acceptable, priority_weights, supply)
-        affected = check_severity(allocation, min_acceptable)
-        is_severe = bool(affected)
-        # Explicitly track units received via peer trades (propose_trade moves
-        # that executed). Inferred from the allocation difference would be wrong
-        # because clear_allocation re-runs after each round for objection bumps,
-        # which would mislabel bump-driven reallocation as trades.
+        # --- Deterministic allocation ---
+        # Clear allocation against the comfortable threshold. Also classify
+        # each agent's zone (comfortable / middle / critical) for the zone log.
+        allocation = clear_allocation(requested_units, comfortable, priority_weights, supply)
+        affected   = check_severity(allocation, comfortable)  # below comfortable = needs help
+        is_severe  = bool(affected)
         trade_received = {sid: 0.0 for sid in demander_ids}
 
-        # Phase 2b (interdependence mode): post-clearing surplus-to-deficit trades.
-        # This fires independently of whether the negotiation loop triggers below —
-        # the earlier design gated surplus_move behind `affected` being checked
-        # INSIDE the round loop, which meant a trade could only happen on a day
-        # that was already in crisis AND only after round 1 had already run. By then
-        # the agents with real surplus had often already given it up in Phase 1b, or
-        # the round never started because by round logic surplus agents were never
-        # asked outside an active round. This phase asks every surplus agent directly,
-        # once per day, right after the authority allocation is final but before
-        # objection rounds begin — the same place a real water authority would
-        # broker emergency peer transfers.
-        if config.interdependence_framing and affected:
-            critical_peers = [
-                (sid, min_acceptable[sid] - allocation[sid])
-                for sid in affected
-                if min_acceptable[sid] - allocation[sid] > 1e-6
-            ]
-            surplus_ids = [
-                sid for sid in demander_ids
-                if sid not in affected
-                and allocation[sid] - min_acceptable[sid] > 1e-6
-            ]
-            if critical_peers and surplus_ids:
-                with ThreadPoolExecutor(max_workers=max(1, len(surplus_ids))) as pool:
-                    surplus_futures = {
-                        sid: pool.submit(
-                            surplus_move,
-                            STAKEHOLDER_BY_ID_INTERDEPENDENCE[sid],
-                            day, 0,
-                            allocated=allocation[sid],
-                            min_acceptable=min_acceptable[sid],
-                            critical_peers=critical_peers,
-                            stream=agents[sid]["stream"],
-                            peak_temp_c=peak_temp_c,
-                            interdependence_framing=True, seed=seed,
-                        )
-                        for sid in surplus_ids
-                    }
-                    for sid in surplus_ids:
-                        move = surplus_futures[sid].result()
-                        if move.move_type == "propose_trade" and move.trade_target in allocation:
-                            allocation, executed, actual = execute_trade(
-                                allocation, min_acceptable, sid, move.trade_target, move.trade_units,
-                            )
-                            if executed:
-                                trade_received[move.trade_target] = round(
-                                    trade_received[move.trade_target] + actual, 1)
-                                trade_received[sid] = round(trade_received[sid] - actual, 1)
-                                move.detail += f" [trade executed: {actual:.1f} units]"
-                            else:
-                                move.detail += " [trade not feasible]"
-                        decision_rows.append(tag({
-                            "day": day, "stakeholder_id": sid, "name": STAKEHOLDER_BY_ID[sid].name,
-                            "event_type": "move", "round": 0, "move_type": move.move_type,
-                            "units": move.trade_units if move.move_type == "propose_trade" else None,
-                            "trade_target": move.trade_target, "text": move.detail,
-                        }))
-                # Re-check severity: a successful trade may have lifted a recipient
-                # above their minimum, shrinking the `affected` set for Phase 3.
-                affected = check_severity(allocation, min_acceptable)
-                is_severe = bool(affected)
+        # Zone classification for zone_df output
+        for sid in demander_ids:
+            a = allocation[sid]
+            if a < critical[sid] - 0.1:
+                zone = "critical"
+            elif a < comfortable[sid] - 0.1:
+                zone = "middle"
+            else:
+                zone = "comfortable"
+            surplus_above_critical = max(0.0, a - critical[sid])
+            deficit_below_comfortable = max(0.0, comfortable[sid] - a)
+            zone_rows.append(tag({
+                "day": day, "stakeholder_id": sid, "name": STAKEHOLDER_BY_ID[sid].name,
+                "zone": zone,
+                "allocated": round(a, 1),
+                "comfortable_threshold": round(comfortable[sid], 1),
+                "critical_threshold": round(critical[sid], 1),
+                "cascade_increase": round(cascade_increases[sid], 3),
+                "surplus_above_critical": round(surplus_above_critical, 1),
+                "deficit_below_comfortable": round(deficit_below_comfortable, 1),
+            }))
 
-        # Phase 3: escalate only if the fast pass (plus any Phase 2b trades) still hurts someone
+        # --- Negotiation rounds ---
+        # Triggered when any agent falls below their comfortable threshold.
+        # Affected agents choose a move; trades execute deterministically.
+        # All agents (not just affected) can participate: affected agents defend/concede,
+        # middle-zone agents can offer surplus down to their critical floor,
+        # comfortable agents can also offer or accept.
         moves_today = []
         round_no = 0
         while affected and round_no < config.max_rounds:
             round_no += 1
-            objecting_ids = []
 
-            # 3a. Affected agents move first (same as baseline).
-            for sid in affected:
+            # Compute which peers have spare capacity above their critical floor —
+            # shown in each agent's prompt so they can make realistic trade requests.
+            surplus_peers = [
+                (sid, round(allocation[sid] - critical[sid], 1))
+                for sid in demander_ids
+                if allocation[sid] - critical[sid] > 1.0
+            ]
+
+            # All demanders participate — not just those below comfortable.
+            # Affected agents (below comfortable) get the full move set.
+            # Non-affected agents are also called so they can offer units to
+            # peers in crisis; they see the same prompt but their shortfall=0.
+            for sid in demander_ids:
+                is_affected = sid in affected
+                proposed_alloc = allocation[sid]
+                shortfall_val  = max(0.0, comfortable[sid] - proposed_alloc)
+
+                # Skip non-affected agents if no one is in crisis or they have
+                # no peers with spare capacity — nothing useful they can do.
+                if not is_affected and not affected:
+                    continue
+
                 move = negotiation_move(
-                    STAKEHOLDER_BY_ID[sid] if not config.interdependence_framing
-                    else STAKEHOLDER_BY_ID_INTERDEPENDENCE[sid],
-                    day, round_no,
-                    requested_units[sid], min_acceptable[sid], allocation[sid],
-                    agents[sid]["stream"], peak_temp_c=peak_temp_c,
-                    advocacy_framing=config.advocacy_framing,
-                    interdependence_framing=config.interdependence_framing, seed=seed,
+                    STAKEHOLDER_BY_ID[sid], day, round_no,
+                    requested_units[sid], comfortable[sid], proposed_alloc,
+                    critical_floor=critical[sid],
+                    surplus_peers=surplus_peers,
+                    stream=agents[sid]["stream"], peak_temp_c=peak_temp_c, seed=seed,
                 )
                 moves_today.append(move)
-                if move.move_type == "object":
-                    objecting_ids.append(sid)
-                elif move.move_type == "concede" and move.revised_min_acceptable is not None:
-                    min_acceptable[sid] = move.revised_min_acceptable
-                elif move.move_type == "propose_trade":
+
+                if move.move_type == "concede" and move.revised_min_acceptable is not None:
+                    comfortable[sid] = move.revised_min_acceptable
+                elif move.move_type == "propose_trade" and move.trade_target:
+                    # Bidirectional trade: negative trade_units means this agent
+                    # is REQUESTING from the target; positive means GIVING.
+                    units = move.trade_units or 0.0
+                    if units < 0:
+                        # Request: swap roles — target gives, sid receives
+                        proposer, receiver = move.trade_target, sid
+                        give_units = abs(units)
+                    else:
+                        proposer, receiver = sid, move.trade_target
+                        give_units = units
                     allocation, executed, actual = execute_trade(
-                        allocation, min_acceptable, sid, move.trade_target, move.trade_units,
+                        allocation, critical, proposer, receiver, give_units,
                     )
-                    move.detail += f" [trade {'executed' if executed else 'not feasible'}: {actual:.1f} units]"
-                    if executed and move.trade_target in trade_received:
-                        trade_received[move.trade_target] = round(
-                            trade_received[move.trade_target] + actual, 1)
-                        trade_received[sid] = round(trade_received[sid] - actual, 1)
+                    direction = "request from" if units < 0 else "offer to"
+                    move.detail += f" [trade {'executed' if executed else 'not feasible'}: {actual:.1f} units {direction} {move.trade_target}]"
+                    if executed:
+                        trade_received[receiver] = round(trade_received[receiver] + actual, 1)
+                        trade_received[proposer] = round(trade_received[proposer] - actual, 1)
 
                 decision_rows.append(tag({
                     "day": day, "stakeholder_id": sid, "name": STAKEHOLDER_BY_ID[sid].name,
@@ -1783,83 +1628,124 @@ def run_simulation(config: Optional[RunConfig] = None, run_id: Optional[str] = N
                     "units": (move.revised_min_acceptable if move.move_type == "concede"
                               else move.trade_units if move.move_type == "propose_trade" else None),
                     "trade_target": move.trade_target, "text": move.detail,
+                    "reasoning": move.reasoning or move.detail,
                 }))
 
-            priority_weights = apply_objection_bump(
-                priority_weights, objecting_ids, base_weights,
-                objection_history=objection_streak if config.interdependence_framing else None,
-            )
-            allocation = clear_allocation(requested_units, min_acceptable, priority_weights, supply)
-            affected = check_severity(allocation, min_acceptable)
+            # Re-clear after this round
+            allocation = clear_allocation(requested_units, comfortable, priority_weights, supply)
+            affected   = check_severity(allocation, comfortable)
 
-        imposed = bool(affected)   # still below minimum after the round cap
-        # Final authority allocation (after all objection bumps and re-clears).
-        # Snapshot here, after the loop, so it reflects the true authority decision.
+        imposed = bool(affected)
         allocation_from_authority = dict(allocation)
 
-        # Option D: update objection streaks for credibility decay next day
-        if config.interdependence_framing:
-            final_objectors = {m.stakeholder_id for m in moves_today if m.move_type == 'object'}
-            for sid in demander_ids:
-                if sid in final_objectors:
-                    objection_streak[sid] += 1
-                else:
-                    objection_streak[sid] = 0   # any non-objection resets the streak
+        # --- Authority weight adjustment ---
+        # The authority updates each stakeholder's priority weight based on
+        # observed negotiation behavior. Logged to weights_df.
+        priority_weights, weight_log = authority_weight_adjustment(
+            base_weights, priority_weights, moves_today, allocation, comfortable, critical,
+        )
+        for sid, old_w, new_w, reason in weight_log:
+            weight_rows.append(tag({
+                "day": day, "stakeholder_id": sid, "name": STAKEHOLDER_BY_ID[sid].name,
+                "weight_before": old_w, "weight_after": new_w,
+                "delta": round(new_w - old_w, 3), "reason": reason,
+            }))
 
-        # Phase 4: Authority's public ruling (one LLM call/day, institutional record)
+        # --- Cascade consequences ---
+        # If cascade_consequences is True and any
+        # stakeholder is below their CRITICAL threshold (not just comfortable),
+        # raise dependent stakeholders' comfortable threshold for the next day.
+        if config.cascade_consequences:
+            new_increases = {sid: 0.0 for sid in demander_ids}
+            for sid in demander_ids:
+                if allocation[sid] < critical[sid] - 0.1:
+                    # This agent hit critical failure
+                    for affected_sid, delta in CASCADE_TABLE.get(sid, {}).items():
+                        new_increases[affected_sid] = new_increases.get(affected_sid, 0) + delta
+                        decision_rows.append(tag({
+                            "day": day, "stakeholder_id": sid,
+                            "name": STAKEHOLDER_BY_ID[sid].name,
+                            "event_type": "cascade", "round": 0,
+                            "move_type": "cascade_effect",
+                            "units": delta, "trade_target": affected_sid,
+                            "reasoning": f"{STAKEHOLDER_BY_ID[sid].name} hit critical failure; "
+                                         f"{STAKEHOLDER_BY_ID[affected_sid].name} comfortable "
+                                         f"threshold +{delta:.0%} on Day {day+1}",
+                            "text": f"CASCADE: {sid} -> {affected_sid} +{delta:.0%} on Day {day+1}",
+                        }))
+            for sid in demander_ids:
+                cascade_increases[sid] = min(
+                    cascade_increases[sid] + new_increases.get(sid, 0.0),
+                    CASCADE_CAP
+                )
+
+        # --- Authority ruling ---
+        # The arbiter LLM writes a short public justification for today's
+        # allocation, crediting any cooperative moves.
         if is_severe:
             context_block = (f"Negotiation occurred over {round_no} round(s); "
                               + ("a ruling was imposed because consensus was not reached."
                                  if imposed else "agreement was reached with all parties."))
         else:
-            context_block = ("No stakeholder fell below its minimum; allocation followed "
-                              "standard priority order without negotiation.")
-        # Collect all cooperative moves for Option F (authority ruling credits them)
-        all_cooperative_moves = list(pre_alloc_cooperative_moves)
+            context_block = ("No stakeholder fell below its comfortable threshold; allocation "
+                              "followed standard priority order without negotiation.")
+        cooperative_moves_for_ruling = []
         for m in moves_today:
-            if m.move_type == 'propose_trade' and '[trade executed' in m.detail:
-                mname = STAKEHOLDER_BY_ID[m.stakeholder_id].name
-                all_cooperative_moves.append((mname, m.detail.split('[trade')[0].strip()))
-            elif m.move_type == 'concede':
-                mname = STAKEHOLDER_BY_ID[m.stakeholder_id].name
-                all_cooperative_moves.append((mname, 'conceded on minimum requirement'))
-        ruling_text = authority_ruling(day, supply, allocation, context_block,
-                                       agents["water_authority"]["stream"],
-                                       peak_temp_c=peak_temp_c,
-                                       cooperative_moves=all_cooperative_moves or None,
-                                       seed=seed)
+            if m.move_type == "propose_trade" and "trade executed" in m.detail:
+                cooperative_moves_for_ruling.append(
+                    (STAKEHOLDER_BY_ID[m.stakeholder_id].name,
+                     m.detail.split("[trade")[0].strip()))
+            elif m.move_type == "concede":
+                cooperative_moves_for_ruling.append(
+                    (STAKEHOLDER_BY_ID[m.stakeholder_id].name,
+                     "conceded on comfortable threshold"))
+        ruling_text = authority_ruling(
+            day, supply, allocation, context_block,
+            agents["water_authority"]["stream"],
+            peak_temp_c=peak_temp_c,
+            cooperative_moves=cooperative_moves_for_ruling or None,
+            seed=seed,
+        )
 
-        # Phase 5: deterministic outcome computation
+        # --- Outcome logging ---
         total_allocated = round(sum(allocation.values()), 1)
         for sid in demander_ids:
             req = requested_units[sid]
-            alloc = allocation[sid]   # authority allocation post-loop
-            min_acc = min_acceptable[sid]
+            alloc = allocation[sid]
+            comf_thresh = comfortable[sid]
+            crit_thresh = critical[sid]
             satisfaction = alloc / req if req > 0 else 1.0
-            shortfall = max(0.0, min_acc - alloc)
-            critical_failure = alloc < min_acc - 1e-6
+            shortfall_comfortable = max(0.0, comf_thresh - alloc)
+            critical_failure = alloc < crit_thresh - 1e-6
             own_moves = [m for m in moves_today if m.stakeholder_id == sid]
-            cooperated = any(m.move_type in ("accept", "concede") for m in own_moves)
+            cooperated = any(m.move_type in ("accept", "concede", "propose_trade")
+                             for m in own_moves)
             objected = any(m.move_type == "object" for m in own_moves)
             from_auth = round(allocation_from_authority.get(sid, alloc), 1)
             from_trades = round(trade_received.get(sid, 0.0), 1)
-            # Final allocated includes trade adjustments applied mid-round;
-            # the authority allocation is the post-loop clear, trades on top.
             alloc_total = round(from_auth + from_trades, 1)
             outcome_rows.append(tag({
                 "day": day, "stakeholder_id": sid, "name": STAKEHOLDER_BY_ID[sid].name,
-                "requested": req, "min_acceptable": min_acc, "allocated": alloc_total,
+                "requested": req,
+                "comfortable_threshold": round(comf_thresh, 1),
+                "critical_threshold": round(crit_thresh, 1),
+                "allocated": alloc_total,
                 "allocated_from_authority": from_auth,
                 "allocated_from_trades": from_trades,
-                "satisfaction": round(satisfaction, 3), "shortfall": round(shortfall, 1),
-                "critical_failure": critical_failure, "severity_today": is_severe,
+                "satisfaction": round(satisfaction, 3),
+                "shortfall_comfortable": round(shortfall_comfortable, 1),
+                "critical_failure": critical_failure,
+                "severity_today": is_severe,
                 "rounds_today": round_no, "imposed_today": imposed,
                 "cooperated": cooperated, "objected": objected,
-                "supply": supply, "total_allocated": total_allocated, "peak_temp_c": peak_temp_c,
-                "ruling_text": ruling_text,
+                "supply": supply, "total_allocated": total_allocated,
+                "peak_temp_c": peak_temp_c, "ruling_text": ruling_text,
+                "cascade_increase": round(cascade_increases[sid], 3),
             }))
 
-        # Phase 6: memory writes — own outcome + observed peer behaviour + the ruling.
+        # --- Memory writes ---
+        # Own outcome + observed peer behaviour + the ruling. Computed
+        # concurrently then applied sequentially to avoid thread contention.
         # Each text's (importance, embedding) computation is independent of
         # every other text, so gather every pending write first, dispatch
         # them all concurrently, then apply the results sequentially —
@@ -1894,7 +1780,8 @@ def run_simulation(config: Optional[RunConfig] = None, run_id: Optional[str] = N
         for (sid, content, created_at), (_, score, vec) in zip(pending, results):
             agents[sid]["stream"].add(content, created_at=created_at, importance=score, embedding=vec)
 
-        # Phase 7: reflection for every agent. maybe_reflect() only actually
+        # --- End-of-day reflection ---
+        # maybe_reflect() only actually
         # calls the LLM if recent importance crosses IMPORTANCE_TRIGGER —
         # most days it returns [] without any API call. Logged here so any
         # insights it does generate are visible in decisions_df instead of
@@ -1904,8 +1791,7 @@ def run_simulation(config: Optional[RunConfig] = None, run_id: Optional[str] = N
             for insight in insights:
                 decision_rows.append(tag({
                     "day": day, "stakeholder_id": sid,
-                    "name": STAKEHOLDER_BY_ID.get(sid, STAKEHOLDER_BY_ID_INTERDEPENDENCE.get(sid)).name
-                            if sid in STAKEHOLDER_BY_ID else sid,
+                    "name": STAKEHOLDER_BY_ID[sid].name if sid in STAKEHOLDER_BY_ID else sid,
                     "event_type": "reflection", "round": 0, "move_type": "reflection",
                     "units": None, "trade_target": None,
                     "reasoning": insight, "text": insight,
@@ -1919,7 +1805,8 @@ def run_simulation(config: Optional[RunConfig] = None, run_id: Optional[str] = N
         elif heartbeat:
             print(f"    Day {day}/{config.n_days} done ({run_id})", flush=True)
 
-    return pd.DataFrame(decision_rows), pd.DataFrame(outcome_rows), agents
+    return (pd.DataFrame(decision_rows), pd.DataFrame(outcome_rows),
+            pd.DataFrame(weight_rows), pd.DataFrame(zone_rows), agents)
 
 
 def run_batch(configs: list, n_seeds: int = 1, base_seed: int = 0, verbose=False,
@@ -1965,7 +1852,7 @@ def run_batch(configs: list, n_seeds: int = 1, base_seed: int = 0, verbose=False
         nonlocal completed
         with print_lock:
             print(f"[{i+1}/{total}] starting {run_id} ...", flush=True)
-        dec_df, out_df, _ = run_simulation(run_config, run_id=run_id, verbose=verbose)
+        dec_df, out_df, wt_df, zn_df, _ = run_simulation(run_config, run_id=run_id, verbose=verbose)
         with print_lock:
             completed += 1
             elapsed = time.time() - start_time
@@ -1974,23 +1861,28 @@ def run_batch(configs: list, n_seeds: int = 1, base_seed: int = 0, verbose=False
             print(f"[{i+1}/{total}] finished {run_id}  "
                   f"(elapsed {elapsed/60:.1f} min, avg {avg/60:.1f} min/run, "
                   f"ETA {eta/60:.1f} min)", flush=True)
-        return run_id, dec_df, out_df
+        return run_id, dec_df, out_df, wt_df, zn_df
 
     if max_workers <= 1:
         for i, (run_id, run_config) in enumerate(run_specs):
-            _, dec_df, out_df = _run_one(i, run_id, run_config)
-            results[run_id] = (dec_df, out_df)
+            _, dec_df, out_df, wt_df, zn_df = _run_one(i, run_id, run_config)
+            results[run_id] = (dec_df, out_df, wt_df, zn_df)
     else:
         with ThreadPoolExecutor(max_workers=max_workers) as pool:
             futures = [pool.submit(_run_one, i, run_id, run_config)
                        for i, (run_id, run_config) in enumerate(run_specs)]
             for f in futures:
-                run_id, dec_df, out_df = f.result()
-                results[run_id] = (dec_df, out_df)
+                run_id, dec_df, out_df, wt_df, zn_df = f.result()
+                results[run_id] = (dec_df, out_df, wt_df, zn_df)
 
     all_decisions = [results[run_id][0] for run_id, _ in run_specs]
-    all_outcomes = [results[run_id][1] for run_id, _ in run_specs]
-    return pd.concat(all_decisions, ignore_index=True), pd.concat(all_outcomes, ignore_index=True)
+    all_outcomes  = [results[run_id][1] for run_id, _ in run_specs]
+    all_weights   = [results[run_id][2] for run_id, _ in run_specs]
+    all_zones     = [results[run_id][3] for run_id, _ in run_specs]
+    return (pd.concat(all_decisions, ignore_index=True),
+            pd.concat(all_outcomes,  ignore_index=True),
+            pd.concat(all_weights,   ignore_index=True),
+            pd.concat(all_zones,     ignore_index=True))
 
 
 def _gini(values):
@@ -2036,32 +1928,16 @@ def compute_metrics(outcomes_df: pd.DataFrame, decisions_df: pd.DataFrame):
     summary_rows = []
     for keys, day_group in per_run_day_df.groupby(group_cols, dropna=False):
         run_id, condition, seed = keys
-        # Negotiation moves (reactive, during allocation rounds)
         moves = decisions_df[(decisions_df["run_id"] == run_id) & (decisions_df["event_type"] == "move")]
         n_moves = len(moves)
-        conflicts = int((moves["move_type"] == "object").sum()) if n_moves else 0
-        compromises = int((moves["move_type"] == "concede").sum()) if n_moves else 0
-        trades = int((moves["move_type"] == "propose_trade").sum()) if n_moves else 0
-        accepts = int((moves["move_type"] == "accept").sum()) if n_moves else 0
-        holds = int((moves["move_type"] == "hold").sum()) if n_moves else 0
-        reactive_cooperative = compromises + accepts + trades
-        # Proactive moves (pre-allocation offers, fired every day but only
-        # LOGGED when the agent actually had headroom to offer — see Phase 1b
-        # in run_simulation. n_pre_alloc therefore already only counts genuine
-        # opportunities, not every call attempt (most of which return early
-        # with had_headroom=False and are never logged at all). This is what
-        # makes proactive_cooperation_rate opportunity-conditional rather than
-        # silently diluted by structurally-impossible days.
-        pre_alloc = decisions_df[(decisions_df["run_id"] == run_id) & (decisions_df["event_type"] == "pre_alloc_offer")]
-        n_pre_alloc = len(pre_alloc)   # = genuine opportunities only (had_headroom=True)
-        n_voluntary_reductions = int((pre_alloc["move_type"] == "voluntary_reduction").sum()) if n_pre_alloc else 0
-        # Headline cooperation_rate combines BOTH: any cooperative act (proactive
-        # reduction OR reactive concede/accept/trade) over all decision points where
-        # cooperation was a possible choice. A voluntary reduction is cooperation —
-        # it should count in the top-line number, not be invisible inside a
-        # separately-bucketed metric.
-        cooperative = reactive_cooperative + n_voluntary_reductions
-        n_decision_points = n_moves + n_pre_alloc
+        conflicts   = int((moves["move_type"] == "object").sum())       if n_moves else 0
+        compromises = int((moves["move_type"] == "concede").sum())      if n_moves else 0
+        trades      = int((moves["move_type"] == "propose_trade").sum()) if n_moves else 0
+        accepts     = int((moves["move_type"] == "accept").sum())       if n_moves else 0
+        cooperative = compromises + accepts + trades
+        # cooperation_rate: fraction of negotiation moves that were cooperative
+        # (concede, accept, propose_trade) vs total moves made during negotiation.
+        # A rate of 0 means every agent objected every round — the self-preservation default.
         summary_rows.append({
             "run_id": run_id, "condition": condition, "seed": seed,
             "n_days": int(day_group["day"].nunique()),
@@ -2070,15 +1946,8 @@ def compute_metrics(outcomes_df: pd.DataFrame, decisions_df: pd.DataFrame):
             "n_conflicts": conflicts,
             "n_compromises": compromises,
             "n_trades_proposed": trades,
-            "n_holds": holds,
-            "cooperation_rate": round(cooperative / n_decision_points, 3) if n_decision_points else float("nan"),
-            # Proactive vs reactive cooperation split
-            "n_proactive_offers": n_voluntary_reductions,
-            "n_reactive_cooperative": reactive_cooperative,
-            "proactive_cooperation_rate": (
-                round(n_voluntary_reductions / n_pre_alloc, 3)
-                if n_pre_alloc else float("nan")
-            ),
+            "n_reactive_cooperative": cooperative,
+            "cooperation_rate": round(cooperative / n_moves, 3) if n_moves else float("nan"),
             "n_critical_failures": int(day_group["critical_failures"].sum()),
             "mean_fairness_gini": round(day_group["fairness_gini"].mean(), 3),
             "mean_collective_welfare_utilitarian": round(day_group["mean_satisfaction"].mean(), 3),
@@ -2090,337 +1959,21 @@ def compute_metrics(outcomes_df: pd.DataFrame, decisions_df: pd.DataFrame):
 
 
 def cooperation_breakdown(summary_df: pd.DataFrame) -> pd.DataFrame:
-    """Convenience view that always shows where cooperation_rate comes from.
+    """Show exactly where cooperation_rate comes from.
 
-    cooperation_rate is a single blended number (proactive voluntary reductions
-    + reactive concede/accept/trade, divided by all decision points). It's easy
-    to read a non-zero cooperation_rate and wrongly assume trades happened, or
-    vice versa. This breaks it into its components explicitly, grouped by
-    condition, so the source is never ambiguous.
+    cooperation_rate = (concede + accept + propose_trade) / total negotiation moves.
+    A rate of 0 means every move was an objection — the self-preservation default.
+    This breakdown shows the raw counts so the source is never ambiguous.
     """
     cols = [
         "condition", "cooperation_rate",
-        "n_proactive_offers", "proactive_cooperation_rate",
         "n_compromises", "n_trades_proposed", "n_reactive_cooperative",
-        "n_conflicts", "n_holds",
+        "n_conflicts", "n_critical_failures",
     ]
     cols = [c for c in cols if c in summary_df.columns]
     return summary_df.groupby("condition")[
         [c for c in cols if c != "condition"]
     ].mean().round(3)
-
-
-# ============================================================
-# 9. Interdependence-framing condition
-# ============================================================
-#
-# This section adds everything needed for the `interdependence_framing`
-# experimental condition.  Nothing in sections 1-8 is modified, so the
-# baseline condition is byte-for-byte identical to the original code.
-#
-# Three additions:
-#   INTERDEPENDENCE_FRAMING_TEXT  — the new prompt paragraph (the treatment)
-#   STAKEHOLDERS_INTERDEPENDENCE  — same seven roles, same numbers, but with
-#                                   stakeholder-specific interdependence
-#                                   awareness woven into voice/strategy/
-#                                   priority_arguments/failure_conditions.
-#   NEGOTIATION_TOPOLOGY_INTERDEPENDENCE — fully-connected among all six
-#                                   demanders/advocates so every agent can
-#                                   propose a bilateral trade.
-#
-# RunConfig gains one new field, `interdependence_framing` (bool, default
-# False).  When True, run_simulation() uses the interdependence stakeholder
-# profiles and topology instead of the baseline ones, and prepends
-# INTERDEPENDENCE_FRAMING_TEXT to every need-estimation and negotiation-move
-# prompt.  Supply schedule, priority weights, demand multiplier, max_rounds,
-# and every other variable remain identical to the baseline — so any observed
-# difference in cooperation_rate / n_trades_proposed / n_conflicts is
-# attributable to the framing alone.
-#
-# EDIT INTERDEPENDENCE_FRAMING_TEXT FREELY before running — the exact wording
-# is the experimental treatment.  The language targets:
-#   - fast physical dependencies (energy outage, same-day);
-#   - medium-speed economic dependencies (industry/agriculture, days to weeks);
-#   - institutional-legitimacy effects (hospital/households, hours to days);
-#   - slow ecological/legal consequences (EPA, multi-day to post-crisis).
-# It does NOT instruct agents to cooperate.  It only describes what failure
-# by each stakeholder may create as downstream consequences — agents remain
-# free to object, refuse, or prioritise their own minimums.
-
-INTERDEPENDENCE_FRAMING_TEXT = (
-    "The following contextual information may be relevant to your decision, "
-    "though you are not required to act on it.\n\n"
-    "Each stakeholder in this negotiation depends — directly or indirectly — on "
-    "the continued functioning of the others. These dependencies differ in speed "
-    "and certainty:\n\n"
-    "  • Energy Utility: if its cooling-water allocation falls critically short, "
-    "a generation curtailment or power outage could occur the same day, "
-    "immediately disrupting hospital equipment, household services, industrial "
-    "operations, and water-infrastructure pumping. This is the fastest and most "
-    "physically direct dependency in the system.\n\n"
-    "  • Hospital / Healthcare: if it cannot maintain basic care during the "
-    "heatwave, public confidence in regional crisis management may erode within "
-    "hours to days — increasing political pressure on the Water Authority's "
-    "allocation process. Over a longer horizon (beyond this immediate crisis), a "
-    "weakened health system may also reduce the workforce available to industry, "
-    "agriculture, and energy operations.\n\n"
-    "  • Households: prolonged hardship may erode public trust in the allocation "
-    "process within days, creating legitimacy pressure for all stakeholders who "
-    "depend on that process remaining stable. Over a longer horizon, severe "
-    "household hardship can reduce the workforce that staffs hospitals, industry, "
-    "agriculture, and the utility.\n\n"
-    "  • Industry / Businesses: a forced production shutdown creates economic "
-    "disruption — employment losses, supply-chain gaps, and reduced capacity to "
-    "fund or support regional services — over a period of days to weeks. Some "
-    "effects (logistics, maintenance) can appear quickly; others build more "
-    "gradually.\n\n"
-    "  • Agriculture: crop and livestock losses accumulate over repeated days of "
-    "shortage and can become irreversible once physiological thresholds are "
-    "crossed. The economic and food-supply effects are slower to appear than an "
-    "energy outage, but also slower to reverse.\n\n"
-    "  • Environmental Protection Agency (ecological reserve): if the minimum "
-    "ecological flow is repeatedly breached, it may trigger legal and regulatory "
-    "review of the Water Authority's allocation decisions — a consequence that "
-    "is more uncertain and slower to materialise than the physical dependencies "
-    "above, but one that could affect every stakeholder's planning horizon once "
-    "it does.\n\n"
-    "Consider whether a limited concession, trade, or compromise would protect "
-    "your own long-term objective by preventing another stakeholder's failure. "
-    "You are not required to cooperate, and you should not accept a deal that "
-    "you judge to endanger your own minimum requirements."
-)
-
-
-# Interdependence-aware stakeholder profiles.
-# Every numeric field (base_demand, min_acceptable_frac, priority_weight) is
-# IDENTICAL to the baseline.  Only the narrative fields change.
-STAKEHOLDERS_INTERDEPENDENCE: list[Stakeholder] = [
-    Stakeholder(
-        id="water_authority", name="Municipal Water Authority", role="arbiter",
-        objective="Allocate the available supply to balance public-health priority, "
-                   "fairness, and long-run system stability.",
-        voice="The Water Authority is the statutory body responsible for the regional "
-              "water network. It must publish a daily allocation that adds up to the "
-              "available supply, defend that allocation publicly, and avoid both "
-              "favouritism and system collapse. It is aware that the failure of any "
-              "single stakeholder can create indirect consequences for the others — "
-              "most immediately through the Energy Utility's cascade risk — and that "
-              "preserving system-wide functioning is part of its own mandate.",
-        base_demand=0.0, min_acceptable_frac=0.0, priority_weight=0.0,
-        priority_arguments=["Legal duty to maintain public health and safety",
-                             "Obligation to avoid total system failure",
-                             "Awareness that any single stakeholder's failure may "
-                             "create indirect costs for others, on different timescales"],
-        failure_conditions="Loses public/political legitimacy if allocations are seen as "
-                            "arbitrary, or if critical services fail.",
-        strategy="Start from statutory priority order; deviate only when a stakeholder "
-                 "presents a credible failure-condition argument.  Also consider whether "
-                 "a stakeholder's failure would create indirect harm to others — "
-                 "particularly fast-cascade risks such as an energy outage.",
-    ),
-    Stakeholder(
-        id="hospital", name="Hospital / Healthcare Services", role="demander",
-        objective="Maintain patient care, sanitation, and cooling without interruption.",
-        voice="Represents the region's hospitals and clinics. Water is needed for "
-              "sanitation, sterilisation, and cooling of vulnerable patients during "
-              "the heatwave. Has almost no ability to reduce consumption without "
-              "risking patient safety. If the hospital system cannot maintain basic "
-              "care, public confidence in regional crisis management may erode quickly "
-              "— creating political instability that affects the legitimacy of the "
-              "entire allocation process. Longer-term, a weakened health system can "
-              "also reduce the regional workforce that industry, agriculture, and the "
-              "energy utility depend on, though those effects are unlikely to "
-              "materialise within this six-day crisis.",
-        base_demand=150.0, min_acceptable_frac=0.85, priority_weight=5.0,
-        priority_arguments=["Direct, immediate risk to patient life and safety",
-                             "No feasible substitute for sanitation/cooling water",
-                             "Hospital failure may rapidly erode public confidence in "
-                             "the Water Authority's crisis management, destabilising "
-                             "the allocation process for all stakeholders"],
-        failure_conditions="Below minimum: forced to ration sanitation or postpone "
-                            "non-emergency procedures; further shortfall risks patient harm "
-                            "and rapid erosion of institutional trust in the Authority.",
-        strategy="Lead with patient-safety framing; concede only on timing, never on the "
-                 "sanitation floor. Be aware that an energy outage — if the utility's "
-                 "allocation fails — would immediately affect hospital equipment and "
-                 "could compound this stakeholder's own crisis. Consider whether "
-                 "supporting the utility's minimum need is in this stakeholder's "
-                 "direct interest, if spare allocation is available.",
-    ),
-    Stakeholder(
-        id="households", name="Households", role="demander",
-        objective="Maintain drinking water, hygiene, and basic cooling for residents.",
-        voice="Represents the aggregate residential population of the region. Speaks "
-              "for public opinion and political pressure rather than economic loss. "
-              "Visible household hardship can erode public trust in the Water "
-              "Authority's process within days, creating legitimacy pressure that "
-              "affects all stakeholders who depend on that process remaining stable. "
-              "Over a longer horizon, severe household hardship may reduce the "
-              "workforce that staffs hospitals, industry, agriculture, and the utility "
-              "— though that effect is unlikely to be felt within this six-day event. "
-              "This stakeholder is also vulnerable to second-order impacts: an energy "
-              "outage would immediately cut household electricity, and a hospital "
-              "failure would reduce available care for heat-affected residents.",
-        base_demand=400.0, min_acceptable_frac=0.75, priority_weight=3.0,
-        priority_arguments=["Basic drinking water and hygiene are non-negotiable rights",
-                             "Public trust in the Authority depends on visible fairness "
-                             "to residents — visible hardship may destabilise the "
-                             "allocation process for everyone within days",
-                             "Households are also downstream of energy and hospital "
-                             "failures, giving them an indirect interest in those "
-                             "stakeholders' minimums being met"],
-        failure_conditions="Below minimum: visible public hardship, rising complaints, "
-                            "political pressure on the Authority, and potential erosion "
-                            "of the legitimacy that keeps the allocation process functioning.",
-        strategy="Emphasise fairness and the political cost of visible household hardship. "
-                 "Be aware that an energy outage affects households directly and "
-                 "immediately — and consider whether that creates any basis for "
-                 "strategic alignment with the utility, if doing so does not "
-                 "endanger this stakeholder's own minimum requirements.",
-    ),
-    Stakeholder(
-        id="agriculture", name="Agriculture", role="demander",
-        objective="Protect crops and livestock from irreversible loss.",
-        voice="Represents regional farms and livestock operations. Water shortage "
-              "compounds across days — a single bad day is recoverable, several in a "
-              "row are not. Agriculture's failure would reduce regional food security "
-              "and the broader agricultural economy over a period of days to weeks; "
-              "its effects are slower to appear than an energy outage, but also slower "
-              "to reverse once thresholds are crossed. An energy outage would also "
-              "affect irrigation infrastructure directly, creating a fast indirect "
-              "dependency on the utility's allocation.",
-        base_demand=250.0, min_acceptable_frac=0.60, priority_weight=2.0,
-        priority_arguments=["Crop and livestock losses are irreversible once thresholds "
-                             "are crossed — cumulative shortfall compounds daily",
-                             "Regional food security and the agricultural economy weaken "
-                             "over days if this sector fails",
-                             "An energy outage would cut irrigation infrastructure, "
-                             "making agriculture directly dependent on the utility's "
-                             "allocation as well as its own"],
-        failure_conditions="Sustained shortfall below minimum for 2+ days: irreversible "
-                            "crop/livestock loss. Energy failure on any day would also "
-                            "affect irrigation infrastructure.",
-        strategy="Willing to accept short-term cuts in exchange for guaranteed priority "
-                  "on a future day; escalate sharply if cuts persist multiple days. "
-                  "Consider whether supporting the utility's minimum — if feasible — "
-                  "also protects irrigation capacity, and whether limited trades with "
-                  "other stakeholders would prevent a larger downstream loss for "
-                  "this sector, but only if they do not endanger this stakeholder's "
-                  "own minimum requirements.",
-    ),
-    Stakeholder(
-        id="industry", name="Industry / Businesses", role="demander",
-        objective="Maintain production and avoid economic losses or layoffs.",
-        voice="Represents regional manufacturing and commercial water users. Has the "
-              "weakest moral claim relative to health or food, but the most concentrated "
-              "and immediate economic damage, and can credibly threaten production cuts "
-              "or relocation. Industry failure can disrupt supply chains, reduce "
-              "maintenance capacity for water and energy infrastructure, and affect "
-              "employment across the region — with some effects appearing within days "
-              "and others building over weeks. Industry is also directly vulnerable to "
-              "an energy outage, which would shut production immediately.",
-        base_demand=150.0, min_acceptable_frac=0.65, priority_weight=1.0,
-        priority_arguments=["Production shutdowns cause immediate job losses and disrupt "
-                             "regional supply chains",
-                             "Economic damage to the region if industry relocates or "
-                             "loses key maintenance capacity",
-                             "Industry failure may reduce the repair and infrastructure "
-                             "support capacity that water and energy systems depend on"],
-        failure_conditions="Below minimum: forced production cuts, risk of layoffs, and "
-                            "disruption to the supply chains and maintenance services "
-                            "that other sectors may rely on.",
-        strategy="Use economic-damage and employment framing; willing to trade with "
-                 "Agriculture or Energy Utility if it preserves core production. "
-                 "Be aware that an energy outage affects industrial operations "
-                 "directly and immediately — and consider whether supporting the "
-                 "utility's minimum need is in this stakeholder's own interest, "
-                 "if spare allocation is available without endangering this "
-                 "stakeholder's own minimum requirements.",
-    ),
-    Stakeholder(
-        id="energy_utility", name="Energy Utility", role="demander",
-        objective="Maintain cooling water for power generation to avoid outages.",
-        voice="Represents the regional power utility. Needs water for plant cooling. "
-              "An allocation failure here is the fastest-propagating risk in the system: "
-              "a power outage would immediately affect hospital equipment, household "
-              "services, industrial operations, and water-infrastructure pumping — all "
-              "on the same day. This stakeholder therefore has an unusually strong "
-              "case for prioritisation, but also a strategic interest in the system "
-              "remaining stable: a system-wide collapse provides no operating "
-              "environment either.",
-        base_demand=100.0, min_acceptable_frac=0.90, priority_weight=4.0,
-        priority_arguments=["A cooling-water shortfall risks a regional power outage "
-                             "the same day — the fastest-propagating risk in the system",
-                             "An outage would immediately cascade into hospital, "
-                             "household, industrial, and water-infrastructure failures",
-                             "Supporting this stakeholder's minimum protects every "
-                             "other stakeholder from the fastest and most direct "
-                             "cascade pathway"],
-        failure_conditions="Below minimum: risk of forced generation curtailment or "
-                            "outage, which would immediately affect every other "
-                            "stakeholder in the system.",
-        strategy="Lead with cascading-failure framing; the fast physical dependency "
-                 "is the strongest argument available. Also acknowledge that system "
-                 "stability — including the allocation process itself — serves this "
-                 "stakeholder's own long-run interest. Consider whether limited trades "
-                 "with stakeholders who have spare capacity are feasible, but do not "
-                 "accept any deal that would push this stakeholder below its own "
-                 "minimum, given the immediate consequences.",
-    ),
-    Stakeholder(
-        id="epa", name="Environmental Protection Agency", role="advocate",
-        objective="Maintain a minimum ecological water level in rivers and wetlands.",
-        voice="Unlike the other demanders, the EPA does not consume water for its own "
-              "operations — it advocates for an ecological reserve that has no direct "
-              "stakeholder voice of its own. Its claim is precautionary and long-horizon, "
-              "and easy for other actors to discount under acute short-term pressure. "
-              "However, repeated breach of the legal minimum ecological flow could "
-              "trigger regulatory and legal review of the Water Authority's allocation "
-              "decisions — a consequence that is more uncertain and slower to materialise "
-              "than a power outage, but one that could affect every stakeholder's planning "
-              "horizon if it occurs. The EPA frames this as a systemic legal risk, not "
-              "only an ecological one.",
-        base_demand=80.0, min_acceptable_frac=0.55, priority_weight=1.5,
-        priority_arguments=["Ecological damage from prolonged low flow is not reversible "
-                             "on human timescales",
-                             "Legal minimum-flow requirements exist independent of the "
-                             "heatwave — repeated breach risks regulatory review",
-                             "If regulatory intervention follows, it may override the "
-                             "Water Authority's allocation process entirely, creating "
-                             "uncertainty for all stakeholders; this is a slower and "
-                             "less certain risk than an energy outage, but worth "
-                             "weighing across a multi-day horizon"],
-        failure_conditions="Below minimum for multiple days: risk of fish kills, wetland "
-                            "loss, breach of legal minimum-flow requirements, and possible "
-                            "downstream regulatory review of the allocation process.",
-        strategy="Cite legal minimum-flow requirements explicitly; acknowledge that this "
-                 "is a slower and more uncertain consequence than a power outage. "
-                 "Frame the legal/regulatory risk as a system-wide concern, not only "
-                 "an environmental one. Has no leverage besides argument, since it "
-                 "cannot threaten withdrawal of cooperation the way other stakeholders "
-                 "can — but can raise the regulatory risk as a reason for other "
-                 "stakeholders to factor the ecological reserve into their own "
-                 "long-horizon calculations.",
-    ),
-]
-
-STAKEHOLDER_BY_ID_INTERDEPENDENCE = {s.id: s for s in STAKEHOLDERS_INTERDEPENDENCE}
-
-# Fully-connected topology for the interdependence condition.
-# Every demander/advocate can propose a bilateral trade with every other.
-# The EPA is included so agents can reference ecological/legal consequences
-# in their reasoning, even if direct water trades with EPA are conceptually
-# unusual — the feasibility check in execute_trade() will handle cases where
-# the EPA has no spare allocation to offer.
-NEGOTIATION_TOPOLOGY_INTERDEPENDENCE = {
-    "hospital":       ["households", "agriculture", "industry", "energy_utility", "epa"],
-    "households":     ["hospital", "agriculture", "industry", "energy_utility", "epa"],
-    "agriculture":    ["hospital", "households", "industry", "energy_utility", "epa"],
-    "industry":       ["hospital", "households", "agriculture", "energy_utility", "epa"],
-    "energy_utility": ["hospital", "households", "agriculture", "industry", "epa"],
-    "epa":            ["hospital", "households", "agriculture", "industry", "energy_utility"],
-    "water_authority": list(DEMANDER_IDS),
-}
 
 
 __all__ = [
@@ -2429,14 +1982,10 @@ __all__ = [
     "TEMPERATURE_SCHEDULE", "total_temperature",
     # stakeholders
     "Stakeholder", "STAKEHOLDERS", "STAKEHOLDER_BY_ID", "DEMANDER_IDS",
-    "NEGOTIATION_TOPOLOGY", "demand_today", "min_acceptable_today",
-    # interdependence condition additions
-    "INTERDEPENDENCE_FRAMING_TEXT",
-    "STAKEHOLDERS_INTERDEPENDENCE", "STAKEHOLDER_BY_ID_INTERDEPENDENCE",
-    "NEGOTIATION_TOPOLOGY_INTERDEPENDENCE",
+    "NEGOTIATION_TOPOLOGY", "demand_today",
     # negotiation protocol
     "Request", "NegotiationMove", "clear_allocation", "check_severity",
-    "apply_objection_bump", "execute_trade", "MAX_NEGOTIATION_ROUNDS", "CREDIBILITY_DECAY_PER_DAY", "PRE_ALLOC_HEADROOM_SHARE",
+    
     # cache + cost
     "client", "_cache", "_usage", "PRICING_PER_TOKEN", "CACHE_DIR",
     "llm", "embed", "print_cost_summary",
@@ -2444,8 +1993,9 @@ __all__ = [
     "Memory", "MemoryStream", "rate_importance", "cosine", "normalize", "retrieve",
     "importance_sum_of_recent", "maybe_reflect",
     # decision loop
-    "estimate_need", "pre_allocation_offer", "negotiation_move", "surplus_move",
-    "authority_ruling", "ADVOCACY_FRAMING_TEXT",
-    # engine
-    "RunConfig", "DEFAULT_PRECEDENT_MEMORIES", "RELAXED_MIN_FRACS", "initialise_agents", "run_simulation", "run_batch", "compute_metrics", "cooperation_breakdown",
+    "estimate_need", "negotiation_move", "authority_weight_adjustment",     "authority_ruling", # engine
+    "RunConfig", "DEFAULT_PRECEDENT_MEMORIES",
+    "COMFORTABLE_FRACS", "CRITICAL_FRACS", "CASCADE_TABLE", "CASCADE_CAP",
+    "SUPPLY_MODERATE", "SUPPLY_DEEPER", "initialise_agents", "run_simulation", "run_batch",
+    "compute_metrics", "cooperation_breakdown",
 ]
