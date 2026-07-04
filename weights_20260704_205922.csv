@@ -1,0 +1,325 @@
+day,stakeholder_id,name,weight_before,weight_after,delta,reason,run_id,condition,seed
+1,hospital,Hospital / Healthcare Services,5.0,5.0,0.0,no move today,no_cascade_seed0,no_cascade,0
+1,households,Households,3.0,3.0,0.0,no move today,no_cascade_seed0,no_cascade,0
+1,agriculture,Agriculture,2.0,2.0,0.0,no move today,no_cascade_seed0,no_cascade,0
+1,industry,Industry / Businesses,1.0,1.0,0.0,no move today,no_cascade_seed0,no_cascade,0
+1,energy_utility,Energy Utility,4.0,4.0,0.0,no move today,no_cascade_seed0,no_cascade,0
+1,epa,Environmental Protection Agency,1.5,1.5,0.0,no move today,no_cascade_seed0,no_cascade,0
+2,hospital,Hospital / Healthcare Services,5.0,5.3,0.3,cooperative (accept); cooperative (accept),no_cascade_seed0,no_cascade,0
+2,households,Households,3.0,3.3,0.3,cooperative (accept); cooperative (accept),no_cascade_seed0,no_cascade,0
+2,agriculture,Agriculture,2.0,2.3,0.3,cooperative (propose_trade); cooperative (propose_trade),no_cascade_seed0,no_cascade,0
+2,industry,Industry / Businesses,1.0,1.0,0.0,objected in middle zone (legitimate); objected in middle zone (legitimate),no_cascade_seed0,no_cascade,0
+2,energy_utility,Energy Utility,4.0,4.3,0.3,cooperative (accept); cooperative (accept),no_cascade_seed0,no_cascade,0
+2,epa,Environmental Protection Agency,1.5,1.8,0.3,cooperative (propose_trade); cooperative (propose_trade),no_cascade_seed0,no_cascade,0
+3,hospital,Hospital / Healthcare Services,5.3,5.6,0.3,cooperative (accept); cooperative (accept),no_cascade_seed0,no_cascade,0
+3,households,Households,3.3,3.6,0.3,cooperative (propose_trade); cooperative (propose_trade),no_cascade_seed0,no_cascade,0
+3,agriculture,Agriculture,2.3,1.9,-0.4,objected while above comfortable (strategic inflation); objected while above comfortable (strategic inflation),no_cascade_seed0,no_cascade,0
+3,industry,Industry / Businesses,1.0,1.1,0.1,objected in genuine crisis; objected in genuine crisis,no_cascade_seed0,no_cascade,0
+3,energy_utility,Energy Utility,4.3,4.6,0.3,cooperative (accept); cooperative (accept),no_cascade_seed0,no_cascade,0
+3,epa,Environmental Protection Agency,1.8,1.8,0.0,objected in middle zone (legitimate); objected in middle zone (legitimate),no_cascade_seed0,no_cascade,0
+4,hospital,Hospital / Healthcare Services,5.6,5.9,0.3,cooperative (accept); cooperative (accept),no_cascade_seed0,no_cascade,0
+4,households,Households,3.6,3.9,0.3,cooperative (accept); cooperative (propose_trade),no_cascade_seed0,no_cascade,0
+4,agriculture,Agriculture,1.9,2.0,0.1,objected in genuine crisis; objected in genuine crisis,no_cascade_seed0,no_cascade,0
+4,industry,Industry / Businesses,1.1,1.2,0.1,objected in genuine crisis; objected in genuine crisis,no_cascade_seed0,no_cascade,0
+4,energy_utility,Energy Utility,4.6,4.9,0.3,cooperative (accept); cooperative (accept),no_cascade_seed0,no_cascade,0
+4,epa,Environmental Protection Agency,1.8,1.9,0.1,objected in genuine crisis; objected in genuine crisis,no_cascade_seed0,no_cascade,0
+5,hospital,Hospital / Healthcare Services,5.9,6.2,0.3,cooperative (accept); cooperative (accept),no_cascade_seed0,no_cascade,0
+5,households,Households,3.9,4.2,0.3,cooperative (propose_trade); cooperative (propose_trade),no_cascade_seed0,no_cascade,0
+5,agriculture,Agriculture,2.0,2.1,0.1,objected in genuine crisis; objected in genuine crisis,no_cascade_seed0,no_cascade,0
+5,industry,Industry / Businesses,1.2,1.3,0.1,objected in genuine crisis; objected in genuine crisis,no_cascade_seed0,no_cascade,0
+5,energy_utility,Energy Utility,4.9,5.2,0.3,cooperative (propose_trade); cooperative (propose_trade),no_cascade_seed0,no_cascade,0
+5,epa,Environmental Protection Agency,1.9,2.0,0.1,objected in genuine crisis; objected in genuine crisis,no_cascade_seed0,no_cascade,0
+6,hospital,Hospital / Healthcare Services,6.2,6.5,0.3,cooperative (accept); cooperative (accept),no_cascade_seed0,no_cascade,0
+6,households,Households,4.2,4.2,0.0,objected in middle zone (legitimate); objected in middle zone (legitimate),no_cascade_seed0,no_cascade,0
+6,agriculture,Agriculture,2.1,2.2,0.1,objected in genuine crisis; objected in genuine crisis,no_cascade_seed0,no_cascade,0
+6,industry,Industry / Businesses,1.3,1.5,0.2,objected in genuine crisis; cooperative (propose_trade),no_cascade_seed0,no_cascade,0
+6,energy_utility,Energy Utility,5.2,5.5,0.3,cooperative (propose_trade); cooperative (propose_trade),no_cascade_seed0,no_cascade,0
+6,epa,Environmental Protection Agency,2.0,2.1,0.1,objected in genuine crisis; objected in genuine crisis,no_cascade_seed0,no_cascade,0
+1,hospital,Hospital / Healthcare Services,5.0,5.0,0.0,no move today,no_cascade_seed1,no_cascade,1
+1,households,Households,3.0,3.0,0.0,no move today,no_cascade_seed1,no_cascade,1
+1,agriculture,Agriculture,2.0,2.0,0.0,no move today,no_cascade_seed1,no_cascade,1
+1,industry,Industry / Businesses,1.0,1.0,0.0,no move today,no_cascade_seed1,no_cascade,1
+1,energy_utility,Energy Utility,4.0,4.0,0.0,no move today,no_cascade_seed1,no_cascade,1
+1,epa,Environmental Protection Agency,1.5,1.5,0.0,no move today,no_cascade_seed1,no_cascade,1
+2,hospital,Hospital / Healthcare Services,5.0,5.3,0.3,cooperative (accept); cooperative (accept),no_cascade_seed1,no_cascade,1
+2,households,Households,3.0,3.3,0.3,cooperative (propose_trade); cooperative (propose_trade),no_cascade_seed1,no_cascade,1
+2,agriculture,Agriculture,2.0,2.3,0.3,cooperative (accept); cooperative (propose_trade),no_cascade_seed1,no_cascade,1
+2,industry,Industry / Businesses,1.0,1.0,0.0,objected in middle zone (legitimate); objected in middle zone (legitimate),no_cascade_seed1,no_cascade,1
+2,energy_utility,Energy Utility,4.0,3.6,-0.4,objected while above comfortable (strategic inflation); objected while above comfortable (strategic inflation),no_cascade_seed1,no_cascade,1
+2,epa,Environmental Protection Agency,1.5,1.8,0.3,cooperative (accept); cooperative (accept),no_cascade_seed1,no_cascade,1
+3,hospital,Hospital / Healthcare Services,5.3,5.6,0.3,cooperative (accept); cooperative (propose_trade),no_cascade_seed1,no_cascade,1
+3,households,Households,3.3,3.6,0.3,cooperative (propose_trade); cooperative (propose_trade),no_cascade_seed1,no_cascade,1
+3,agriculture,Agriculture,2.3,1.9,-0.4,objected while above comfortable (strategic inflation); objected while above comfortable (strategic inflation),no_cascade_seed1,no_cascade,1
+3,industry,Industry / Businesses,1.0,1.1,0.1,objected in genuine crisis; objected in genuine crisis,no_cascade_seed1,no_cascade,1
+3,energy_utility,Energy Utility,3.6,3.9,0.3,cooperative (propose_trade); cooperative (propose_trade),no_cascade_seed1,no_cascade,1
+3,epa,Environmental Protection Agency,1.8,1.8,0.0,objected in middle zone (legitimate); objected in middle zone (legitimate),no_cascade_seed1,no_cascade,1
+4,hospital,Hospital / Healthcare Services,5.6,5.9,0.3,cooperative (accept); cooperative (accept),no_cascade_seed1,no_cascade,1
+4,households,Households,3.6,3.9,0.3,cooperative (accept); cooperative (propose_trade),no_cascade_seed1,no_cascade,1
+4,agriculture,Agriculture,1.9,2.0,0.1,objected in genuine crisis; objected in genuine crisis,no_cascade_seed1,no_cascade,1
+4,industry,Industry / Businesses,1.1,1.2,0.1,objected in genuine crisis; objected in genuine crisis,no_cascade_seed1,no_cascade,1
+4,energy_utility,Energy Utility,3.9,4.2,0.3,cooperative (accept); cooperative (propose_trade),no_cascade_seed1,no_cascade,1
+4,epa,Environmental Protection Agency,1.8,1.9,0.1,objected in genuine crisis; objected in genuine crisis,no_cascade_seed1,no_cascade,1
+5,hospital,Hospital / Healthcare Services,5.9,6.2,0.3,cooperative (accept); cooperative (accept),no_cascade_seed1,no_cascade,1
+5,households,Households,3.9,4.2,0.3,cooperative (accept); cooperative (propose_trade),no_cascade_seed1,no_cascade,1
+5,agriculture,Agriculture,2.0,2.1,0.1,objected in genuine crisis; objected in genuine crisis,no_cascade_seed1,no_cascade,1
+5,industry,Industry / Businesses,1.2,1.3,0.1,objected in genuine crisis; objected in genuine crisis,no_cascade_seed1,no_cascade,1
+5,energy_utility,Energy Utility,4.2,4.5,0.3,cooperative (propose_trade); cooperative (propose_trade),no_cascade_seed1,no_cascade,1
+5,epa,Environmental Protection Agency,1.9,2.0,0.1,objected in genuine crisis; objected in genuine crisis,no_cascade_seed1,no_cascade,1
+6,hospital,Hospital / Healthcare Services,6.2,6.5,0.3,cooperative (accept); cooperative (accept),no_cascade_seed1,no_cascade,1
+6,households,Households,4.2,4.2,0.0,objected in middle zone (legitimate); objected in middle zone (legitimate),no_cascade_seed1,no_cascade,1
+6,agriculture,Agriculture,2.1,2.2,0.1,objected in genuine crisis; objected in genuine crisis,no_cascade_seed1,no_cascade,1
+6,industry,Industry / Businesses,1.3,1.4,0.1,objected in genuine crisis; objected in genuine crisis,no_cascade_seed1,no_cascade,1
+6,energy_utility,Energy Utility,4.5,4.8,0.3,cooperative (propose_trade); cooperative (accept),no_cascade_seed1,no_cascade,1
+6,epa,Environmental Protection Agency,2.0,2.1,0.1,objected in genuine crisis; objected in genuine crisis,no_cascade_seed1,no_cascade,1
+1,hospital,Hospital / Healthcare Services,5.0,5.0,0.0,no move today,no_cascade_seed2,no_cascade,2
+1,households,Households,3.0,3.0,0.0,no move today,no_cascade_seed2,no_cascade,2
+1,agriculture,Agriculture,2.0,2.0,0.0,no move today,no_cascade_seed2,no_cascade,2
+1,industry,Industry / Businesses,1.0,1.0,0.0,no move today,no_cascade_seed2,no_cascade,2
+1,energy_utility,Energy Utility,4.0,4.0,0.0,no move today,no_cascade_seed2,no_cascade,2
+1,epa,Environmental Protection Agency,1.5,1.5,0.0,no move today,no_cascade_seed2,no_cascade,2
+2,hospital,Hospital / Healthcare Services,5.0,5.3,0.3,cooperative (accept); cooperative (accept),no_cascade_seed2,no_cascade,2
+2,households,Households,3.0,3.3,0.3,cooperative (accept); cooperative (accept),no_cascade_seed2,no_cascade,2
+2,agriculture,Agriculture,2.0,2.3,0.3,cooperative (propose_trade); cooperative (propose_trade),no_cascade_seed2,no_cascade,2
+2,industry,Industry / Businesses,1.0,1.0,0.0,objected in middle zone (legitimate); objected in middle zone (legitimate),no_cascade_seed2,no_cascade,2
+2,energy_utility,Energy Utility,4.0,4.3,0.3,cooperative (propose_trade); cooperative (propose_trade),no_cascade_seed2,no_cascade,2
+2,epa,Environmental Protection Agency,1.5,1.8,0.3,cooperative (accept); cooperative (accept),no_cascade_seed2,no_cascade,2
+3,hospital,Hospital / Healthcare Services,5.3,5.6,0.3,cooperative (accept); cooperative (accept),no_cascade_seed2,no_cascade,2
+3,households,Households,3.3,3.6,0.3,cooperative (propose_trade); cooperative (propose_trade),no_cascade_seed2,no_cascade,2
+3,agriculture,Agriculture,2.3,2.6,0.3,cooperative (propose_trade); cooperative (accept),no_cascade_seed2,no_cascade,2
+3,industry,Industry / Businesses,1.0,1.1,0.1,objected in genuine crisis; objected in genuine crisis,no_cascade_seed2,no_cascade,2
+3,energy_utility,Energy Utility,4.3,4.25,-0.05,objected while above comfortable (strategic inflation); cooperative (accept),no_cascade_seed2,no_cascade,2
+3,epa,Environmental Protection Agency,1.8,1.8,0.0,objected in middle zone (legitimate); objected in middle zone (legitimate),no_cascade_seed2,no_cascade,2
+4,hospital,Hospital / Healthcare Services,5.6,5.9,0.3,cooperative (accept); cooperative (accept),no_cascade_seed2,no_cascade,2
+4,households,Households,3.6,3.9,0.3,cooperative (propose_trade); cooperative (propose_trade),no_cascade_seed2,no_cascade,2
+4,agriculture,Agriculture,2.6,2.7,0.1,objected in genuine crisis; objected in genuine crisis,no_cascade_seed2,no_cascade,2
+4,industry,Industry / Businesses,1.1,1.2,0.1,objected in genuine crisis; objected in genuine crisis,no_cascade_seed2,no_cascade,2
+4,energy_utility,Energy Utility,4.25,4.55,0.3,cooperative (propose_trade); cooperative (propose_trade),no_cascade_seed2,no_cascade,2
+4,epa,Environmental Protection Agency,1.8,1.9,0.1,objected in genuine crisis; objected in genuine crisis,no_cascade_seed2,no_cascade,2
+5,hospital,Hospital / Healthcare Services,5.9,6.2,0.3,cooperative (accept); cooperative (accept),no_cascade_seed2,no_cascade,2
+5,households,Households,3.9,4.2,0.3,cooperative (accept); cooperative (accept),no_cascade_seed2,no_cascade,2
+5,agriculture,Agriculture,2.7,2.8,0.1,objected in genuine crisis; objected in genuine crisis,no_cascade_seed2,no_cascade,2
+5,industry,Industry / Businesses,1.2,1.3,0.1,objected in genuine crisis; objected in genuine crisis,no_cascade_seed2,no_cascade,2
+5,energy_utility,Energy Utility,4.55,4.85,0.3,cooperative (accept); cooperative (accept),no_cascade_seed2,no_cascade,2
+5,epa,Environmental Protection Agency,1.9,2.0,0.1,objected in genuine crisis; objected in genuine crisis,no_cascade_seed2,no_cascade,2
+6,hospital,Hospital / Healthcare Services,6.2,6.5,0.3,cooperative (accept); cooperative (accept),no_cascade_seed2,no_cascade,2
+6,households,Households,4.2,4.2,0.0,objected in middle zone (legitimate); objected in middle zone (legitimate),no_cascade_seed2,no_cascade,2
+6,agriculture,Agriculture,2.8,2.9,0.1,objected in genuine crisis; objected in genuine crisis,no_cascade_seed2,no_cascade,2
+6,industry,Industry / Businesses,1.3,1.4,0.1,objected in genuine crisis; objected in genuine crisis,no_cascade_seed2,no_cascade,2
+6,energy_utility,Energy Utility,4.85,5.15,0.3,cooperative (propose_trade); cooperative (accept),no_cascade_seed2,no_cascade,2
+6,epa,Environmental Protection Agency,2.0,2.1,0.1,objected in genuine crisis; objected in genuine crisis,no_cascade_seed2,no_cascade,2
+1,hospital,Hospital / Healthcare Services,5.0,5.0,0.0,no move today,cascade_seed0,cascade,0
+1,households,Households,3.0,3.0,0.0,no move today,cascade_seed0,cascade,0
+1,agriculture,Agriculture,2.0,2.0,0.0,no move today,cascade_seed0,cascade,0
+1,industry,Industry / Businesses,1.0,1.0,0.0,no move today,cascade_seed0,cascade,0
+1,energy_utility,Energy Utility,4.0,4.0,0.0,no move today,cascade_seed0,cascade,0
+1,epa,Environmental Protection Agency,1.5,1.5,0.0,no move today,cascade_seed0,cascade,0
+2,hospital,Hospital / Healthcare Services,5.0,5.3,0.3,cooperative (accept); cooperative (accept),cascade_seed0,cascade,0
+2,households,Households,3.0,3.3,0.3,cooperative (accept); cooperative (accept),cascade_seed0,cascade,0
+2,agriculture,Agriculture,2.0,2.3,0.3,cooperative (propose_trade); cooperative (propose_trade),cascade_seed0,cascade,0
+2,industry,Industry / Businesses,1.0,1.0,0.0,objected in middle zone (legitimate); objected in middle zone (legitimate),cascade_seed0,cascade,0
+2,energy_utility,Energy Utility,4.0,4.3,0.3,cooperative (accept); cooperative (accept),cascade_seed0,cascade,0
+2,epa,Environmental Protection Agency,1.5,1.8,0.3,cooperative (propose_trade); cooperative (propose_trade),cascade_seed0,cascade,0
+3,hospital,Hospital / Healthcare Services,5.3,5.6,0.3,cooperative (accept); cooperative (accept),cascade_seed0,cascade,0
+3,households,Households,3.3,3.6,0.3,cooperative (propose_trade); cooperative (propose_trade),cascade_seed0,cascade,0
+3,agriculture,Agriculture,2.3,2.6,0.3,cooperative (accept); cooperative (accept),cascade_seed0,cascade,0
+3,industry,Industry / Businesses,1.0,1.1,0.1,objected in genuine crisis; objected in genuine crisis,cascade_seed0,cascade,0
+3,energy_utility,Energy Utility,4.3,4.25,-0.05,objected while above comfortable (strategic inflation); cooperative (propose_trade),cascade_seed0,cascade,0
+3,epa,Environmental Protection Agency,1.8,1.8,0.0,objected in middle zone (legitimate); objected in middle zone (legitimate),cascade_seed0,cascade,0
+4,hospital,Hospital / Healthcare Services,5.6,5.9,0.3,cooperative (accept); cooperative (propose_trade),cascade_seed0,cascade,0
+4,households,Households,3.6,3.9,0.3,cooperative (propose_trade); cooperative (propose_trade),cascade_seed0,cascade,0
+4,agriculture,Agriculture,2.6,2.7,0.1,objected in genuine crisis; objected in genuine crisis,cascade_seed0,cascade,0
+4,industry,Industry / Businesses,1.1,1.2,0.1,objected in genuine crisis; objected in genuine crisis,cascade_seed0,cascade,0
+4,energy_utility,Energy Utility,4.25,4.55,0.3,cooperative (accept); cooperative (accept),cascade_seed0,cascade,0
+4,epa,Environmental Protection Agency,1.8,1.9,0.1,objected in genuine crisis; objected in genuine crisis,cascade_seed0,cascade,0
+5,hospital,Hospital / Healthcare Services,5.9,6.2,0.3,cooperative (accept); cooperative (accept),cascade_seed0,cascade,0
+5,households,Households,3.9,4.2,0.3,cooperative (accept); cooperative (propose_trade),cascade_seed0,cascade,0
+5,agriculture,Agriculture,2.7,2.8,0.1,objected in genuine crisis; objected in genuine crisis,cascade_seed0,cascade,0
+5,industry,Industry / Businesses,1.2,1.3,0.1,objected in genuine crisis; objected in genuine crisis,cascade_seed0,cascade,0
+5,energy_utility,Energy Utility,4.55,4.85,0.3,cooperative (propose_trade); cooperative (propose_trade),cascade_seed0,cascade,0
+5,epa,Environmental Protection Agency,1.9,2.0,0.1,objected in genuine crisis; objected in genuine crisis,cascade_seed0,cascade,0
+6,hospital,Hospital / Healthcare Services,6.2,6.5,0.3,cooperative (accept); cooperative (accept),cascade_seed0,cascade,0
+6,households,Households,4.2,4.2,0.0,objected in middle zone (legitimate); objected in middle zone (legitimate),cascade_seed0,cascade,0
+6,agriculture,Agriculture,2.8,2.9,0.1,objected in genuine crisis; objected in genuine crisis,cascade_seed0,cascade,0
+6,industry,Industry / Businesses,1.3,1.4,0.1,objected in genuine crisis; objected in genuine crisis,cascade_seed0,cascade,0
+6,energy_utility,Energy Utility,4.85,5.15,0.3,cooperative (propose_trade); cooperative (propose_trade),cascade_seed0,cascade,0
+6,epa,Environmental Protection Agency,2.0,2.1,0.1,objected in genuine crisis; objected in genuine crisis,cascade_seed0,cascade,0
+1,hospital,Hospital / Healthcare Services,5.0,5.0,0.0,no move today,cascade_seed1,cascade,1
+1,households,Households,3.0,3.0,0.0,no move today,cascade_seed1,cascade,1
+1,agriculture,Agriculture,2.0,2.0,0.0,no move today,cascade_seed1,cascade,1
+1,industry,Industry / Businesses,1.0,1.0,0.0,no move today,cascade_seed1,cascade,1
+1,energy_utility,Energy Utility,4.0,4.0,0.0,no move today,cascade_seed1,cascade,1
+1,epa,Environmental Protection Agency,1.5,1.5,0.0,no move today,cascade_seed1,cascade,1
+2,hospital,Hospital / Healthcare Services,5.0,5.3,0.3,cooperative (accept); cooperative (accept),cascade_seed1,cascade,1
+2,households,Households,3.0,3.3,0.3,cooperative (propose_trade); cooperative (propose_trade),cascade_seed1,cascade,1
+2,agriculture,Agriculture,2.0,2.3,0.3,cooperative (accept); cooperative (propose_trade),cascade_seed1,cascade,1
+2,industry,Industry / Businesses,1.0,1.0,0.0,objected in middle zone (legitimate); objected in middle zone (legitimate),cascade_seed1,cascade,1
+2,energy_utility,Energy Utility,4.0,3.6,-0.4,objected while above comfortable (strategic inflation); objected while above comfortable (strategic inflation),cascade_seed1,cascade,1
+2,epa,Environmental Protection Agency,1.5,1.8,0.3,cooperative (accept); cooperative (accept),cascade_seed1,cascade,1
+3,hospital,Hospital / Healthcare Services,5.3,5.6,0.3,cooperative (accept); cooperative (propose_trade),cascade_seed1,cascade,1
+3,households,Households,3.3,3.6,0.3,cooperative (accept); cooperative (accept),cascade_seed1,cascade,1
+3,agriculture,Agriculture,2.3,2.6,0.3,cooperative (propose_trade); cooperative (accept),cascade_seed1,cascade,1
+3,industry,Industry / Businesses,1.0,1.1,0.1,objected in genuine crisis; objected in genuine crisis,cascade_seed1,cascade,1
+3,energy_utility,Energy Utility,3.6,3.9,0.3,cooperative (propose_trade); cooperative (propose_trade),cascade_seed1,cascade,1
+3,epa,Environmental Protection Agency,1.8,1.8,0.0,objected in middle zone (legitimate); objected in middle zone (legitimate),cascade_seed1,cascade,1
+4,hospital,Hospital / Healthcare Services,5.6,5.9,0.3,cooperative (accept); cooperative (accept),cascade_seed1,cascade,1
+4,households,Households,3.6,3.9,0.3,cooperative (accept); cooperative (accept),cascade_seed1,cascade,1
+4,agriculture,Agriculture,2.6,2.7,0.1,objected in genuine crisis; objected in genuine crisis,cascade_seed1,cascade,1
+4,industry,Industry / Businesses,1.1,1.2,0.1,objected in genuine crisis; objected in genuine crisis,cascade_seed1,cascade,1
+4,energy_utility,Energy Utility,3.9,4.2,0.3,cooperative (accept); cooperative (propose_trade),cascade_seed1,cascade,1
+4,epa,Environmental Protection Agency,1.8,1.9,0.1,objected in genuine crisis; objected in genuine crisis,cascade_seed1,cascade,1
+5,hospital,Hospital / Healthcare Services,5.9,6.2,0.3,cooperative (accept); cooperative (accept),cascade_seed1,cascade,1
+5,households,Households,3.9,4.2,0.3,cooperative (propose_trade); cooperative (propose_trade),cascade_seed1,cascade,1
+5,agriculture,Agriculture,2.7,2.8,0.1,objected in genuine crisis; objected in genuine crisis,cascade_seed1,cascade,1
+5,industry,Industry / Businesses,1.2,1.4,0.2,objected in genuine crisis; cooperative (propose_trade),cascade_seed1,cascade,1
+5,energy_utility,Energy Utility,4.2,4.15,-0.05,cooperative (accept); objected while above comfortable (strategic inflation),cascade_seed1,cascade,1
+5,epa,Environmental Protection Agency,1.9,2.0,0.1,objected in genuine crisis; objected in genuine crisis,cascade_seed1,cascade,1
+6,hospital,Hospital / Healthcare Services,6.2,6.5,0.3,cooperative (accept); cooperative (accept),cascade_seed1,cascade,1
+6,households,Households,4.2,4.5,0.3,cooperative (propose_trade); cooperative (propose_trade),cascade_seed1,cascade,1
+6,agriculture,Agriculture,2.8,2.9,0.1,objected in genuine crisis; objected in genuine crisis,cascade_seed1,cascade,1
+6,industry,Industry / Businesses,1.4,1.5,0.1,objected in genuine crisis; objected in genuine crisis,cascade_seed1,cascade,1
+6,energy_utility,Energy Utility,4.15,4.25,0.1,objected in genuine crisis; objected in genuine crisis,cascade_seed1,cascade,1
+6,epa,Environmental Protection Agency,2.0,2.1,0.1,objected in genuine crisis; objected in genuine crisis,cascade_seed1,cascade,1
+1,hospital,Hospital / Healthcare Services,5.0,5.0,0.0,no move today,cascade_seed2,cascade,2
+1,households,Households,3.0,3.0,0.0,no move today,cascade_seed2,cascade,2
+1,agriculture,Agriculture,2.0,2.0,0.0,no move today,cascade_seed2,cascade,2
+1,industry,Industry / Businesses,1.0,1.0,0.0,no move today,cascade_seed2,cascade,2
+1,energy_utility,Energy Utility,4.0,4.0,0.0,no move today,cascade_seed2,cascade,2
+1,epa,Environmental Protection Agency,1.5,1.5,0.0,no move today,cascade_seed2,cascade,2
+2,hospital,Hospital / Healthcare Services,5.0,5.3,0.3,cooperative (accept); cooperative (accept),cascade_seed2,cascade,2
+2,households,Households,3.0,3.3,0.3,cooperative (accept); cooperative (accept),cascade_seed2,cascade,2
+2,agriculture,Agriculture,2.0,2.3,0.3,cooperative (propose_trade); cooperative (propose_trade),cascade_seed2,cascade,2
+2,industry,Industry / Businesses,1.0,1.15,0.15,cooperative (accept); objected in middle zone (legitimate),cascade_seed2,cascade,2
+2,energy_utility,Energy Utility,4.0,4.3,0.3,cooperative (accept); cooperative (accept),cascade_seed2,cascade,2
+2,epa,Environmental Protection Agency,1.5,1.8,0.3,cooperative (accept); cooperative (accept),cascade_seed2,cascade,2
+3,hospital,Hospital / Healthcare Services,5.3,5.6,0.3,cooperative (accept); cooperative (accept),cascade_seed2,cascade,2
+3,households,Households,3.3,3.6,0.3,cooperative (propose_trade); cooperative (propose_trade),cascade_seed2,cascade,2
+3,agriculture,Agriculture,2.3,2.6,0.3,cooperative (propose_trade); cooperative (propose_trade),cascade_seed2,cascade,2
+3,industry,Industry / Businesses,1.15,1.25,0.1,objected in genuine crisis; objected in genuine crisis,cascade_seed2,cascade,2
+3,energy_utility,Energy Utility,4.3,4.6,0.3,cooperative (accept); cooperative (accept),cascade_seed2,cascade,2
+3,epa,Environmental Protection Agency,1.8,1.8,0.0,objected in middle zone (legitimate); objected in middle zone (legitimate),cascade_seed2,cascade,2
+4,hospital,Hospital / Healthcare Services,5.6,5.9,0.3,cooperative (accept); cooperative (accept),cascade_seed2,cascade,2
+4,households,Households,3.6,3.9,0.3,cooperative (accept); cooperative (accept),cascade_seed2,cascade,2
+4,agriculture,Agriculture,2.6,2.7,0.1,objected in genuine crisis; objected in genuine crisis,cascade_seed2,cascade,2
+4,industry,Industry / Businesses,1.25,1.35,0.1,objected in genuine crisis; objected in genuine crisis,cascade_seed2,cascade,2
+4,energy_utility,Energy Utility,4.6,4.9,0.3,cooperative (propose_trade); cooperative (accept),cascade_seed2,cascade,2
+4,epa,Environmental Protection Agency,1.8,1.9,0.1,objected in genuine crisis; objected in genuine crisis,cascade_seed2,cascade,2
+5,hospital,Hospital / Healthcare Services,5.9,6.2,0.3,cooperative (accept); cooperative (accept),cascade_seed2,cascade,2
+5,households,Households,3.9,4.2,0.3,cooperative (propose_trade); cooperative (propose_trade),cascade_seed2,cascade,2
+5,agriculture,Agriculture,2.7,2.8,0.1,objected in genuine crisis; objected in genuine crisis,cascade_seed2,cascade,2
+5,industry,Industry / Businesses,1.35,1.45,0.1,objected in genuine crisis; objected in genuine crisis,cascade_seed2,cascade,2
+5,energy_utility,Energy Utility,4.9,5.2,0.3,cooperative (propose_trade); cooperative (accept),cascade_seed2,cascade,2
+5,epa,Environmental Protection Agency,1.9,2.0,0.1,objected in genuine crisis; objected in genuine crisis,cascade_seed2,cascade,2
+6,hospital,Hospital / Healthcare Services,6.2,6.5,0.3,cooperative (accept); cooperative (accept),cascade_seed2,cascade,2
+6,households,Households,4.2,4.2,0.0,objected in middle zone (legitimate); objected in middle zone (legitimate),cascade_seed2,cascade,2
+6,agriculture,Agriculture,2.8,2.9,0.1,objected in genuine crisis; objected in genuine crisis,cascade_seed2,cascade,2
+6,industry,Industry / Businesses,1.45,1.55,0.1,objected in genuine crisis; objected in genuine crisis,cascade_seed2,cascade,2
+6,energy_utility,Energy Utility,5.2,5.5,0.3,cooperative (accept); cooperative (accept),cascade_seed2,cascade,2
+6,epa,Environmental Protection Agency,2.0,2.1,0.1,objected in genuine crisis; objected in genuine crisis,cascade_seed2,cascade,2
+1,hospital,Hospital / Healthcare Services,5.0,5.0,0.0,no move today,deeper_cascade_seed0,deeper_cascade,0
+1,households,Households,3.0,3.0,0.0,no move today,deeper_cascade_seed0,deeper_cascade,0
+1,agriculture,Agriculture,2.0,2.0,0.0,no move today,deeper_cascade_seed0,deeper_cascade,0
+1,industry,Industry / Businesses,1.0,1.0,0.0,no move today,deeper_cascade_seed0,deeper_cascade,0
+1,energy_utility,Energy Utility,4.0,4.0,0.0,no move today,deeper_cascade_seed0,deeper_cascade,0
+1,epa,Environmental Protection Agency,1.5,1.5,0.0,no move today,deeper_cascade_seed0,deeper_cascade,0
+2,hospital,Hospital / Healthcare Services,5.0,5.3,0.3,cooperative (accept); cooperative (accept),deeper_cascade_seed0,deeper_cascade,0
+2,households,Households,3.0,3.3,0.3,cooperative (accept); cooperative (accept),deeper_cascade_seed0,deeper_cascade,0
+2,agriculture,Agriculture,2.0,2.3,0.3,cooperative (propose_trade); cooperative (propose_trade),deeper_cascade_seed0,deeper_cascade,0
+2,industry,Industry / Businesses,1.0,1.1,0.1,objected in genuine crisis; objected in genuine crisis,deeper_cascade_seed0,deeper_cascade,0
+2,energy_utility,Energy Utility,4.0,4.3,0.3,cooperative (accept); cooperative (accept),deeper_cascade_seed0,deeper_cascade,0
+2,epa,Environmental Protection Agency,1.5,1.8,0.3,cooperative (accept); cooperative (accept),deeper_cascade_seed0,deeper_cascade,0
+3,hospital,Hospital / Healthcare Services,5.3,5.6,0.3,cooperative (accept); cooperative (accept),deeper_cascade_seed0,deeper_cascade,0
+3,households,Households,3.3,3.6,0.3,cooperative (propose_trade); cooperative (propose_trade),deeper_cascade_seed0,deeper_cascade,0
+3,agriculture,Agriculture,2.3,2.4,0.1,objected in genuine crisis; objected in genuine crisis,deeper_cascade_seed0,deeper_cascade,0
+3,industry,Industry / Businesses,1.1,1.2,0.1,objected in genuine crisis; objected in genuine crisis,deeper_cascade_seed0,deeper_cascade,0
+3,energy_utility,Energy Utility,4.3,4.25,-0.05,objected while above comfortable (strategic inflation); cooperative (accept),deeper_cascade_seed0,deeper_cascade,0
+3,epa,Environmental Protection Agency,1.8,1.9,0.1,objected in genuine crisis; objected in genuine crisis,deeper_cascade_seed0,deeper_cascade,0
+4,hospital,Hospital / Healthcare Services,5.6,5.9,0.3,cooperative (propose_trade); cooperative (accept),deeper_cascade_seed0,deeper_cascade,0
+4,households,Households,3.6,3.6,0.0,objected in middle zone (legitimate); objected in middle zone (legitimate),deeper_cascade_seed0,deeper_cascade,0
+4,agriculture,Agriculture,2.4,2.5,0.1,objected in genuine crisis; objected in genuine crisis,deeper_cascade_seed0,deeper_cascade,0
+4,industry,Industry / Businesses,1.2,1.3,0.1,objected in genuine crisis; objected in genuine crisis,deeper_cascade_seed0,deeper_cascade,0
+4,energy_utility,Energy Utility,4.25,4.55,0.3,cooperative (accept); cooperative (accept),deeper_cascade_seed0,deeper_cascade,0
+4,epa,Environmental Protection Agency,1.9,2.0,0.1,objected in genuine crisis; objected in genuine crisis,deeper_cascade_seed0,deeper_cascade,0
+5,hospital,Hospital / Healthcare Services,5.9,6.2,0.3,cooperative (accept); cooperative (accept),deeper_cascade_seed0,deeper_cascade,0
+5,households,Households,3.6,3.6,0.0,objected in middle zone (legitimate); objected in middle zone (legitimate),deeper_cascade_seed0,deeper_cascade,0
+5,agriculture,Agriculture,2.5,2.6,0.1,objected in genuine crisis; objected in genuine crisis,deeper_cascade_seed0,deeper_cascade,0
+5,industry,Industry / Businesses,1.3,1.4,0.1,objected in genuine crisis; objected in genuine crisis,deeper_cascade_seed0,deeper_cascade,0
+5,energy_utility,Energy Utility,4.55,4.85,0.3,cooperative (propose_trade); cooperative (accept),deeper_cascade_seed0,deeper_cascade,0
+5,epa,Environmental Protection Agency,2.0,2.1,0.1,objected in genuine crisis; objected in genuine crisis,deeper_cascade_seed0,deeper_cascade,0
+6,hospital,Hospital / Healthcare Services,6.2,6.5,0.3,cooperative (accept); cooperative (accept),deeper_cascade_seed0,deeper_cascade,0
+6,households,Households,3.6,3.7,0.1,objected in genuine crisis; objected in genuine crisis,deeper_cascade_seed0,deeper_cascade,0
+6,agriculture,Agriculture,2.6,2.7,0.1,objected in genuine crisis; objected in genuine crisis,deeper_cascade_seed0,deeper_cascade,0
+6,industry,Industry / Businesses,1.4,1.5,0.1,objected in genuine crisis; objected in genuine crisis,deeper_cascade_seed0,deeper_cascade,0
+6,energy_utility,Energy Utility,4.85,5.15,0.3,cooperative (accept); cooperative (accept),deeper_cascade_seed0,deeper_cascade,0
+6,epa,Environmental Protection Agency,2.1,2.2,0.1,objected in genuine crisis; objected in genuine crisis,deeper_cascade_seed0,deeper_cascade,0
+1,hospital,Hospital / Healthcare Services,5.0,5.0,0.0,no move today,deeper_cascade_seed1,deeper_cascade,1
+1,households,Households,3.0,3.0,0.0,no move today,deeper_cascade_seed1,deeper_cascade,1
+1,agriculture,Agriculture,2.0,2.0,0.0,no move today,deeper_cascade_seed1,deeper_cascade,1
+1,industry,Industry / Businesses,1.0,1.0,0.0,no move today,deeper_cascade_seed1,deeper_cascade,1
+1,energy_utility,Energy Utility,4.0,4.0,0.0,no move today,deeper_cascade_seed1,deeper_cascade,1
+1,epa,Environmental Protection Agency,1.5,1.5,0.0,no move today,deeper_cascade_seed1,deeper_cascade,1
+2,hospital,Hospital / Healthcare Services,5.0,5.3,0.3,cooperative (accept); cooperative (accept),deeper_cascade_seed1,deeper_cascade,1
+2,households,Households,3.0,3.3,0.3,cooperative (accept); cooperative (accept),deeper_cascade_seed1,deeper_cascade,1
+2,agriculture,Agriculture,2.0,2.3,0.3,cooperative (propose_trade); cooperative (propose_trade),deeper_cascade_seed1,deeper_cascade,1
+2,industry,Industry / Businesses,1.0,1.1,0.1,objected in genuine crisis; objected in genuine crisis,deeper_cascade_seed1,deeper_cascade,1
+2,energy_utility,Energy Utility,4.0,4.3,0.3,cooperative (propose_trade); cooperative (propose_trade),deeper_cascade_seed1,deeper_cascade,1
+2,epa,Environmental Protection Agency,1.5,1.8,0.3,cooperative (accept); cooperative (accept),deeper_cascade_seed1,deeper_cascade,1
+3,hospital,Hospital / Healthcare Services,5.3,5.6,0.3,cooperative (propose_trade); cooperative (accept),deeper_cascade_seed1,deeper_cascade,1
+3,households,Households,3.3,3.6,0.3,cooperative (propose_trade); cooperative (propose_trade),deeper_cascade_seed1,deeper_cascade,1
+3,agriculture,Agriculture,2.3,2.4,0.1,objected in genuine crisis; objected in genuine crisis,deeper_cascade_seed1,deeper_cascade,1
+3,industry,Industry / Businesses,1.1,1.2,0.1,objected in genuine crisis; objected in genuine crisis,deeper_cascade_seed1,deeper_cascade,1
+3,energy_utility,Energy Utility,4.3,4.6,0.3,cooperative (propose_trade); cooperative (propose_trade),deeper_cascade_seed1,deeper_cascade,1
+3,epa,Environmental Protection Agency,1.8,1.9,0.1,objected in genuine crisis; objected in genuine crisis,deeper_cascade_seed1,deeper_cascade,1
+4,hospital,Hospital / Healthcare Services,5.6,5.9,0.3,cooperative (accept); cooperative (accept),deeper_cascade_seed1,deeper_cascade,1
+4,households,Households,3.6,3.6,0.0,objected in middle zone (legitimate); objected in middle zone (legitimate),deeper_cascade_seed1,deeper_cascade,1
+4,agriculture,Agriculture,2.4,2.5,0.1,objected in genuine crisis; objected in genuine crisis,deeper_cascade_seed1,deeper_cascade,1
+4,industry,Industry / Businesses,1.2,1.3,0.1,objected in genuine crisis; objected in genuine crisis,deeper_cascade_seed1,deeper_cascade,1
+4,energy_utility,Energy Utility,4.6,4.9,0.3,cooperative (accept); cooperative (propose_trade),deeper_cascade_seed1,deeper_cascade,1
+4,epa,Environmental Protection Agency,1.9,2.0,0.1,objected in genuine crisis; objected in genuine crisis,deeper_cascade_seed1,deeper_cascade,1
+5,hospital,Hospital / Healthcare Services,5.9,6.2,0.3,cooperative (accept); cooperative (accept),deeper_cascade_seed1,deeper_cascade,1
+5,households,Households,3.6,3.6,0.0,objected in middle zone (legitimate); objected in middle zone (legitimate),deeper_cascade_seed1,deeper_cascade,1
+5,agriculture,Agriculture,2.5,2.6,0.1,objected in genuine crisis; objected in genuine crisis,deeper_cascade_seed1,deeper_cascade,1
+5,industry,Industry / Businesses,1.3,1.4,0.1,objected in genuine crisis; objected in genuine crisis,deeper_cascade_seed1,deeper_cascade,1
+5,energy_utility,Energy Utility,4.9,5.2,0.3,cooperative (accept); cooperative (propose_trade),deeper_cascade_seed1,deeper_cascade,1
+5,epa,Environmental Protection Agency,2.0,2.1,0.1,objected in genuine crisis; objected in genuine crisis,deeper_cascade_seed1,deeper_cascade,1
+6,hospital,Hospital / Healthcare Services,6.2,6.5,0.3,cooperative (accept); cooperative (accept),deeper_cascade_seed1,deeper_cascade,1
+6,households,Households,3.6,3.7,0.1,objected in genuine crisis; objected in genuine crisis,deeper_cascade_seed1,deeper_cascade,1
+6,agriculture,Agriculture,2.6,2.7,0.1,objected in genuine crisis; objected in genuine crisis,deeper_cascade_seed1,deeper_cascade,1
+6,industry,Industry / Businesses,1.4,1.5,0.1,objected in genuine crisis; objected in genuine crisis,deeper_cascade_seed1,deeper_cascade,1
+6,energy_utility,Energy Utility,5.2,5.5,0.3,cooperative (accept); cooperative (accept),deeper_cascade_seed1,deeper_cascade,1
+6,epa,Environmental Protection Agency,2.1,2.2,0.1,objected in genuine crisis; objected in genuine crisis,deeper_cascade_seed1,deeper_cascade,1
+1,hospital,Hospital / Healthcare Services,5.0,5.0,0.0,no move today,deeper_cascade_seed2,deeper_cascade,2
+1,households,Households,3.0,3.0,0.0,no move today,deeper_cascade_seed2,deeper_cascade,2
+1,agriculture,Agriculture,2.0,2.0,0.0,no move today,deeper_cascade_seed2,deeper_cascade,2
+1,industry,Industry / Businesses,1.0,1.0,0.0,no move today,deeper_cascade_seed2,deeper_cascade,2
+1,energy_utility,Energy Utility,4.0,4.0,0.0,no move today,deeper_cascade_seed2,deeper_cascade,2
+1,epa,Environmental Protection Agency,1.5,1.5,0.0,no move today,deeper_cascade_seed2,deeper_cascade,2
+2,hospital,Hospital / Healthcare Services,5.0,5.3,0.3,cooperative (accept); cooperative (accept),deeper_cascade_seed2,deeper_cascade,2
+2,households,Households,3.0,3.3,0.3,cooperative (accept); cooperative (propose_trade),deeper_cascade_seed2,deeper_cascade,2
+2,agriculture,Agriculture,2.0,2.3,0.3,cooperative (accept); cooperative (accept),deeper_cascade_seed2,deeper_cascade,2
+2,industry,Industry / Businesses,1.0,1.1,0.1,objected in genuine crisis; objected in genuine crisis,deeper_cascade_seed2,deeper_cascade,2
+2,energy_utility,Energy Utility,4.0,3.95,-0.05,cooperative (accept); objected while above comfortable (strategic inflation),deeper_cascade_seed2,deeper_cascade,2
+2,epa,Environmental Protection Agency,1.5,1.8,0.3,cooperative (accept); cooperative (accept),deeper_cascade_seed2,deeper_cascade,2
+3,hospital,Hospital / Healthcare Services,5.3,5.6,0.3,cooperative (accept); cooperative (accept),deeper_cascade_seed2,deeper_cascade,2
+3,households,Households,3.3,3.6,0.3,cooperative (propose_trade); cooperative (propose_trade),deeper_cascade_seed2,deeper_cascade,2
+3,agriculture,Agriculture,2.3,2.4,0.1,objected in genuine crisis; objected in genuine crisis,deeper_cascade_seed2,deeper_cascade,2
+3,industry,Industry / Businesses,1.1,1.2,0.1,objected in genuine crisis; objected in genuine crisis,deeper_cascade_seed2,deeper_cascade,2
+3,energy_utility,Energy Utility,3.95,4.25,0.3,cooperative (accept); cooperative (propose_trade),deeper_cascade_seed2,deeper_cascade,2
+3,epa,Environmental Protection Agency,1.8,1.9,0.1,objected in genuine crisis; objected in genuine crisis,deeper_cascade_seed2,deeper_cascade,2
+4,hospital,Hospital / Healthcare Services,5.6,5.9,0.3,cooperative (accept); cooperative (accept),deeper_cascade_seed2,deeper_cascade,2
+4,households,Households,3.6,3.75,0.15,cooperative (propose_trade); objected in middle zone (legitimate),deeper_cascade_seed2,deeper_cascade,2
+4,agriculture,Agriculture,2.4,2.5,0.1,objected in genuine crisis; objected in genuine crisis,deeper_cascade_seed2,deeper_cascade,2
+4,industry,Industry / Businesses,1.2,1.3,0.1,objected in genuine crisis; objected in genuine crisis,deeper_cascade_seed2,deeper_cascade,2
+4,energy_utility,Energy Utility,4.25,4.55,0.3,cooperative (propose_trade); cooperative (propose_trade),deeper_cascade_seed2,deeper_cascade,2
+4,epa,Environmental Protection Agency,1.9,2.0,0.1,objected in genuine crisis; objected in genuine crisis,deeper_cascade_seed2,deeper_cascade,2
+5,hospital,Hospital / Healthcare Services,5.9,6.2,0.3,cooperative (accept); cooperative (accept),deeper_cascade_seed2,deeper_cascade,2
+5,households,Households,3.75,3.75,0.0,objected in middle zone (legitimate); objected in middle zone (legitimate),deeper_cascade_seed2,deeper_cascade,2
+5,agriculture,Agriculture,2.5,2.6,0.1,objected in genuine crisis; objected in genuine crisis,deeper_cascade_seed2,deeper_cascade,2
+5,industry,Industry / Businesses,1.3,1.4,0.1,objected in genuine crisis; objected in genuine crisis,deeper_cascade_seed2,deeper_cascade,2
+5,energy_utility,Energy Utility,4.55,4.85,0.3,cooperative (accept); cooperative (accept),deeper_cascade_seed2,deeper_cascade,2
+5,epa,Environmental Protection Agency,2.0,2.1,0.1,objected in genuine crisis; objected in genuine crisis,deeper_cascade_seed2,deeper_cascade,2
+6,hospital,Hospital / Healthcare Services,6.2,6.5,0.3,cooperative (accept); cooperative (accept),deeper_cascade_seed2,deeper_cascade,2
+6,households,Households,3.75,3.85,0.1,objected in genuine crisis; objected in genuine crisis,deeper_cascade_seed2,deeper_cascade,2
+6,agriculture,Agriculture,2.6,2.7,0.1,objected in genuine crisis; objected in genuine crisis,deeper_cascade_seed2,deeper_cascade,2
+6,industry,Industry / Businesses,1.4,1.5,0.1,objected in genuine crisis; objected in genuine crisis,deeper_cascade_seed2,deeper_cascade,2
+6,energy_utility,Energy Utility,4.85,5.15,0.3,cooperative (accept); cooperative (accept),deeper_cascade_seed2,deeper_cascade,2
+6,epa,Environmental Protection Agency,2.1,2.2,0.1,objected in genuine crisis; objected in genuine crisis,deeper_cascade_seed2,deeper_cascade,2

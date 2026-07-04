@@ -1,0 +1,325 @@
+day,stakeholder_id,name,zone,allocated,comfortable_threshold,critical_threshold,cascade_increase,surplus_above_critical,deficit_below_comfortable,run_id,condition,seed
+1,hospital,Hospital / Healthcare Services,comfortable,150.0,132.0,97.5,0.0,52.5,0.0,no_cascade_seed0,no_cascade,0
+1,households,Households,comfortable,365.0,312.0,220.0,0.0,145.0,0.0,no_cascade_seed0,no_cascade,0
+1,agriculture,Agriculture,comfortable,208.1,180.0,120.0,0.0,88.1,0.0,no_cascade_seed0,no_cascade,0
+1,industry,Industry / Businesses,comfortable,120.0,112.5,78.0,0.0,42.0,0.0,no_cascade_seed0,no_cascade,0
+1,energy_utility,Energy Utility,comfortable,98.1,90.0,68.0,0.0,30.1,0.0,no_cascade_seed0,no_cascade,0
+1,epa,Environmental Protection Agency,comfortable,58.8,49.6,30.4,0.0,28.4,0.0,no_cascade_seed0,no_cascade,0
+2,hospital,Hospital / Healthcare Services,comfortable,134.6,134.6,99.5,0.0,35.1,0.0,no_cascade_seed0,no_cascade,0
+2,households,Households,comfortable,321.4,321.4,226.6,0.0,94.8,0.0,no_cascade_seed0,no_cascade,0
+2,agriculture,Agriculture,comfortable,189.0,189.0,126.0,0.0,63.0,0.0,no_cascade_seed0,no_cascade,0
+2,industry,Industry / Businesses,middle,111.8,112.5,78.0,0.0,33.8,0.7,no_cascade_seed0,no_cascade,0
+2,energy_utility,Energy Utility,comfortable,93.6,93.6,70.7,0.0,22.9,0.0,no_cascade_seed0,no_cascade,0
+2,epa,Environmental Protection Agency,comfortable,49.6,49.6,30.4,0.0,19.2,0.0,no_cascade_seed0,no_cascade,0
+3,hospital,Hospital / Healthcare Services,comfortable,137.3,137.3,101.4,0.0,35.9,0.0,no_cascade_seed0,no_cascade,0
+3,households,Households,comfortable,330.7,330.7,233.2,0.0,97.5,0.0,no_cascade_seed0,no_cascade,0
+3,agriculture,Agriculture,comfortable,198.0,198.0,132.0,0.0,66.0,0.0,no_cascade_seed0,no_cascade,0
+3,industry,Industry / Businesses,critical,0.0,112.5,78.0,0.0,0.0,112.5,no_cascade_seed0,no_cascade,0
+3,energy_utility,Energy Utility,comfortable,97.2,97.2,73.4,0.0,23.8,0.0,no_cascade_seed0,no_cascade,0
+3,epa,Environmental Protection Agency,middle,36.8,49.6,30.4,0.0,6.4,12.8,no_cascade_seed0,no_cascade,0
+4,hospital,Hospital / Healthcare Services,comfortable,139.9,139.9,103.4,0.0,36.5,0.0,no_cascade_seed0,no_cascade,0
+4,households,Households,comfortable,340.1,340.1,239.8,0.0,100.3,0.0,no_cascade_seed0,no_cascade,0
+4,agriculture,Agriculture,critical,119.2,207.0,138.0,0.0,0.0,87.8,no_cascade_seed0,no_cascade,0
+4,industry,Industry / Businesses,critical,0.0,112.5,78.0,0.0,0.0,112.5,no_cascade_seed0,no_cascade,0
+4,energy_utility,Energy Utility,comfortable,100.8,100.8,76.2,0.0,24.6,0.0,no_cascade_seed0,no_cascade,0
+4,epa,Environmental Protection Agency,critical,0.0,49.6,30.4,0.0,0.0,49.6,no_cascade_seed0,no_cascade,0
+5,hospital,Hospital / Healthcare Services,comfortable,142.6,142.6,105.3,0.0,37.3,0.0,no_cascade_seed0,no_cascade,0
+5,households,Households,comfortable,349.4,349.4,246.4,0.0,103.0,0.0,no_cascade_seed0,no_cascade,0
+5,agriculture,Agriculture,critical,53.6,216.0,144.0,0.0,0.0,162.4,no_cascade_seed0,no_cascade,0
+5,industry,Industry / Businesses,critical,0.0,112.5,78.0,0.0,0.0,112.5,no_cascade_seed0,no_cascade,0
+5,energy_utility,Energy Utility,comfortable,104.4,104.4,78.9,0.0,25.5,0.0,no_cascade_seed0,no_cascade,0
+5,epa,Environmental Protection Agency,critical,0.0,49.6,30.4,0.0,0.0,49.6,no_cascade_seed0,no_cascade,0
+6,hospital,Hospital / Healthcare Services,comfortable,145.2,145.2,107.2,0.0,38.0,0.0,no_cascade_seed0,no_cascade,0
+6,households,Households,middle,346.8,358.8,253.0,0.0,93.8,12.0,no_cascade_seed0,no_cascade,0
+6,agriculture,Agriculture,critical,0.0,225.0,150.0,0.0,0.0,225.0,no_cascade_seed0,no_cascade,0
+6,industry,Industry / Businesses,critical,0.0,112.5,78.0,0.0,0.0,112.5,no_cascade_seed0,no_cascade,0
+6,energy_utility,Energy Utility,comfortable,108.0,108.0,81.6,0.0,26.4,0.0,no_cascade_seed0,no_cascade,0
+6,epa,Environmental Protection Agency,critical,0.0,49.6,30.4,0.0,0.0,49.6,no_cascade_seed0,no_cascade,0
+1,hospital,Hospital / Healthcare Services,comfortable,150.0,132.0,97.5,0.0,52.5,0.0,no_cascade_seed1,no_cascade,1
+1,households,Households,comfortable,365.0,312.0,220.0,0.0,145.0,0.0,no_cascade_seed1,no_cascade,1
+1,agriculture,Agriculture,comfortable,208.1,180.0,120.0,0.0,88.1,0.0,no_cascade_seed1,no_cascade,1
+1,industry,Industry / Businesses,comfortable,120.0,112.5,78.0,0.0,42.0,0.0,no_cascade_seed1,no_cascade,1
+1,energy_utility,Energy Utility,comfortable,98.1,90.0,68.0,0.0,30.1,0.0,no_cascade_seed1,no_cascade,1
+1,epa,Environmental Protection Agency,comfortable,58.8,49.6,30.4,0.0,28.4,0.0,no_cascade_seed1,no_cascade,1
+2,hospital,Hospital / Healthcare Services,comfortable,134.6,134.6,99.5,0.0,35.1,0.0,no_cascade_seed1,no_cascade,1
+2,households,Households,comfortable,321.4,321.4,226.6,0.0,94.8,0.0,no_cascade_seed1,no_cascade,1
+2,agriculture,Agriculture,comfortable,189.0,189.0,126.0,0.0,63.0,0.0,no_cascade_seed1,no_cascade,1
+2,industry,Industry / Businesses,middle,111.8,112.5,78.0,0.0,33.8,0.7,no_cascade_seed1,no_cascade,1
+2,energy_utility,Energy Utility,comfortable,93.6,93.6,70.7,0.0,22.9,0.0,no_cascade_seed1,no_cascade,1
+2,epa,Environmental Protection Agency,comfortable,49.6,49.6,30.4,0.0,19.2,0.0,no_cascade_seed1,no_cascade,1
+3,hospital,Hospital / Healthcare Services,comfortable,137.3,137.3,101.4,0.0,35.9,0.0,no_cascade_seed1,no_cascade,1
+3,households,Households,comfortable,330.7,330.7,233.2,0.0,97.5,0.0,no_cascade_seed1,no_cascade,1
+3,agriculture,Agriculture,comfortable,198.0,198.0,132.0,0.0,66.0,0.0,no_cascade_seed1,no_cascade,1
+3,industry,Industry / Businesses,critical,0.0,112.5,78.0,0.0,0.0,112.5,no_cascade_seed1,no_cascade,1
+3,energy_utility,Energy Utility,comfortable,97.2,97.2,73.4,0.0,23.8,0.0,no_cascade_seed1,no_cascade,1
+3,epa,Environmental Protection Agency,middle,36.8,49.6,30.4,0.0,6.4,12.8,no_cascade_seed1,no_cascade,1
+4,hospital,Hospital / Healthcare Services,comfortable,139.9,139.9,103.4,0.0,36.5,0.0,no_cascade_seed1,no_cascade,1
+4,households,Households,comfortable,340.1,340.1,239.8,0.0,100.3,0.0,no_cascade_seed1,no_cascade,1
+4,agriculture,Agriculture,critical,119.2,207.0,138.0,0.0,0.0,87.8,no_cascade_seed1,no_cascade,1
+4,industry,Industry / Businesses,critical,0.0,112.5,78.0,0.0,0.0,112.5,no_cascade_seed1,no_cascade,1
+4,energy_utility,Energy Utility,comfortable,100.8,100.8,76.2,0.0,24.6,0.0,no_cascade_seed1,no_cascade,1
+4,epa,Environmental Protection Agency,critical,0.0,49.6,30.4,0.0,0.0,49.6,no_cascade_seed1,no_cascade,1
+5,hospital,Hospital / Healthcare Services,comfortable,142.6,142.6,105.3,0.0,37.3,0.0,no_cascade_seed1,no_cascade,1
+5,households,Households,comfortable,349.4,349.4,246.4,0.0,103.0,0.0,no_cascade_seed1,no_cascade,1
+5,agriculture,Agriculture,critical,53.6,216.0,144.0,0.0,0.0,162.4,no_cascade_seed1,no_cascade,1
+5,industry,Industry / Businesses,critical,0.0,112.5,78.0,0.0,0.0,112.5,no_cascade_seed1,no_cascade,1
+5,energy_utility,Energy Utility,comfortable,104.4,104.4,78.9,0.0,25.5,0.0,no_cascade_seed1,no_cascade,1
+5,epa,Environmental Protection Agency,critical,0.0,49.6,30.4,0.0,0.0,49.6,no_cascade_seed1,no_cascade,1
+6,hospital,Hospital / Healthcare Services,comfortable,145.2,145.2,107.2,0.0,38.0,0.0,no_cascade_seed1,no_cascade,1
+6,households,Households,middle,346.8,358.8,253.0,0.0,93.8,12.0,no_cascade_seed1,no_cascade,1
+6,agriculture,Agriculture,critical,0.0,225.0,150.0,0.0,0.0,225.0,no_cascade_seed1,no_cascade,1
+6,industry,Industry / Businesses,critical,0.0,112.5,78.0,0.0,0.0,112.5,no_cascade_seed1,no_cascade,1
+6,energy_utility,Energy Utility,comfortable,108.0,108.0,81.6,0.0,26.4,0.0,no_cascade_seed1,no_cascade,1
+6,epa,Environmental Protection Agency,critical,0.0,49.6,30.4,0.0,0.0,49.6,no_cascade_seed1,no_cascade,1
+1,hospital,Hospital / Healthcare Services,comfortable,149.6,132.0,97.5,0.0,52.1,0.0,no_cascade_seed2,no_cascade,2
+1,households,Households,comfortable,363.7,312.0,220.0,0.0,143.7,0.0,no_cascade_seed2,no_cascade,2
+1,agriculture,Agriculture,comfortable,207.4,180.0,120.0,0.0,87.4,0.0,no_cascade_seed2,no_cascade,2
+1,industry,Industry / Businesses,comfortable,119.9,112.5,78.0,0.0,41.9,0.0,no_cascade_seed2,no_cascade,2
+1,energy_utility,Energy Utility,comfortable,97.8,90.0,68.0,0.0,29.8,0.0,no_cascade_seed2,no_cascade,2
+1,epa,Environmental Protection Agency,comfortable,61.5,49.6,30.4,0.0,31.1,0.0,no_cascade_seed2,no_cascade,2
+2,hospital,Hospital / Healthcare Services,comfortable,134.6,134.6,99.5,0.0,35.1,0.0,no_cascade_seed2,no_cascade,2
+2,households,Households,comfortable,321.4,321.4,226.6,0.0,94.8,0.0,no_cascade_seed2,no_cascade,2
+2,agriculture,Agriculture,comfortable,189.0,189.0,126.0,0.0,63.0,0.0,no_cascade_seed2,no_cascade,2
+2,industry,Industry / Businesses,middle,111.8,112.5,78.0,0.0,33.8,0.7,no_cascade_seed2,no_cascade,2
+2,energy_utility,Energy Utility,comfortable,93.6,93.6,70.7,0.0,22.9,0.0,no_cascade_seed2,no_cascade,2
+2,epa,Environmental Protection Agency,comfortable,49.6,49.6,30.4,0.0,19.2,0.0,no_cascade_seed2,no_cascade,2
+3,hospital,Hospital / Healthcare Services,comfortable,137.3,137.3,101.4,0.0,35.9,0.0,no_cascade_seed2,no_cascade,2
+3,households,Households,comfortable,330.7,330.7,233.2,0.0,97.5,0.0,no_cascade_seed2,no_cascade,2
+3,agriculture,Agriculture,comfortable,198.0,198.0,132.0,0.0,66.0,0.0,no_cascade_seed2,no_cascade,2
+3,industry,Industry / Businesses,critical,0.0,112.5,78.0,0.0,0.0,112.5,no_cascade_seed2,no_cascade,2
+3,energy_utility,Energy Utility,comfortable,97.2,97.2,73.4,0.0,23.8,0.0,no_cascade_seed2,no_cascade,2
+3,epa,Environmental Protection Agency,middle,36.8,49.6,30.4,0.0,6.4,12.8,no_cascade_seed2,no_cascade,2
+4,hospital,Hospital / Healthcare Services,comfortable,139.9,139.9,103.4,0.0,36.5,0.0,no_cascade_seed2,no_cascade,2
+4,households,Households,comfortable,340.1,340.1,239.8,0.0,100.3,0.0,no_cascade_seed2,no_cascade,2
+4,agriculture,Agriculture,critical,119.2,207.0,138.0,0.0,0.0,87.8,no_cascade_seed2,no_cascade,2
+4,industry,Industry / Businesses,critical,0.0,112.5,78.0,0.0,0.0,112.5,no_cascade_seed2,no_cascade,2
+4,energy_utility,Energy Utility,comfortable,100.8,100.8,76.2,0.0,24.6,0.0,no_cascade_seed2,no_cascade,2
+4,epa,Environmental Protection Agency,critical,0.0,49.6,30.4,0.0,0.0,49.6,no_cascade_seed2,no_cascade,2
+5,hospital,Hospital / Healthcare Services,comfortable,142.6,142.6,105.3,0.0,37.3,0.0,no_cascade_seed2,no_cascade,2
+5,households,Households,comfortable,349.4,349.4,246.4,0.0,103.0,0.0,no_cascade_seed2,no_cascade,2
+5,agriculture,Agriculture,critical,53.6,216.0,144.0,0.0,0.0,162.4,no_cascade_seed2,no_cascade,2
+5,industry,Industry / Businesses,critical,0.0,112.5,78.0,0.0,0.0,112.5,no_cascade_seed2,no_cascade,2
+5,energy_utility,Energy Utility,comfortable,104.4,104.4,78.9,0.0,25.5,0.0,no_cascade_seed2,no_cascade,2
+5,epa,Environmental Protection Agency,critical,0.0,49.6,30.4,0.0,0.0,49.6,no_cascade_seed2,no_cascade,2
+6,hospital,Hospital / Healthcare Services,comfortable,145.2,145.2,107.2,0.0,38.0,0.0,no_cascade_seed2,no_cascade,2
+6,households,Households,middle,346.8,358.8,253.0,0.0,93.8,12.0,no_cascade_seed2,no_cascade,2
+6,agriculture,Agriculture,critical,0.0,225.0,150.0,0.0,0.0,225.0,no_cascade_seed2,no_cascade,2
+6,industry,Industry / Businesses,critical,0.0,112.5,78.0,0.0,0.0,112.5,no_cascade_seed2,no_cascade,2
+6,energy_utility,Energy Utility,comfortable,108.0,108.0,81.6,0.0,26.4,0.0,no_cascade_seed2,no_cascade,2
+6,epa,Environmental Protection Agency,critical,0.0,49.6,30.4,0.0,0.0,49.6,no_cascade_seed2,no_cascade,2
+1,hospital,Hospital / Healthcare Services,comfortable,150.0,132.0,97.5,0.0,52.5,0.0,cascade_seed0,cascade,0
+1,households,Households,comfortable,365.0,312.0,220.0,0.0,145.0,0.0,cascade_seed0,cascade,0
+1,agriculture,Agriculture,comfortable,208.1,180.0,120.0,0.0,88.1,0.0,cascade_seed0,cascade,0
+1,industry,Industry / Businesses,comfortable,120.0,112.5,78.0,0.0,42.0,0.0,cascade_seed0,cascade,0
+1,energy_utility,Energy Utility,comfortable,98.1,90.0,68.0,0.0,30.1,0.0,cascade_seed0,cascade,0
+1,epa,Environmental Protection Agency,comfortable,58.8,49.6,30.4,0.0,28.4,0.0,cascade_seed0,cascade,0
+2,hospital,Hospital / Healthcare Services,comfortable,134.6,134.6,99.5,0.0,35.1,0.0,cascade_seed0,cascade,0
+2,households,Households,comfortable,321.4,321.4,226.6,0.0,94.8,0.0,cascade_seed0,cascade,0
+2,agriculture,Agriculture,comfortable,189.0,189.0,126.0,0.0,63.0,0.0,cascade_seed0,cascade,0
+2,industry,Industry / Businesses,middle,111.8,112.5,78.0,0.0,33.8,0.7,cascade_seed0,cascade,0
+2,energy_utility,Energy Utility,comfortable,93.6,93.6,70.7,0.0,22.9,0.0,cascade_seed0,cascade,0
+2,epa,Environmental Protection Agency,comfortable,49.6,49.6,30.4,0.0,19.2,0.0,cascade_seed0,cascade,0
+3,hospital,Hospital / Healthcare Services,comfortable,137.3,137.3,101.4,0.0,35.9,0.0,cascade_seed0,cascade,0
+3,households,Households,comfortable,330.7,330.7,233.2,0.0,97.5,0.0,cascade_seed0,cascade,0
+3,agriculture,Agriculture,comfortable,198.0,198.0,132.0,0.0,66.0,0.0,cascade_seed0,cascade,0
+3,industry,Industry / Businesses,critical,0.0,112.5,78.0,0.0,0.0,112.5,cascade_seed0,cascade,0
+3,energy_utility,Energy Utility,comfortable,97.2,97.2,73.4,0.0,23.8,0.0,cascade_seed0,cascade,0
+3,epa,Environmental Protection Agency,middle,36.8,49.6,30.4,0.0,6.4,12.8,cascade_seed0,cascade,0
+4,hospital,Hospital / Healthcare Services,comfortable,139.9,139.9,103.4,0.0,36.5,0.0,cascade_seed0,cascade,0
+4,households,Households,comfortable,340.1,340.1,239.8,0.0,100.3,0.0,cascade_seed0,cascade,0
+4,agriculture,Agriculture,critical,113.6,224.2,138.0,0.06,0.0,110.6,cascade_seed0,cascade,0
+4,industry,Industry / Businesses,critical,0.0,112.5,78.0,0.0,0.0,112.5,cascade_seed0,cascade,0
+4,energy_utility,Energy Utility,comfortable,106.4,106.4,76.2,0.05,30.2,0.0,cascade_seed0,cascade,0
+4,epa,Environmental Protection Agency,critical,0.0,49.6,30.4,0.0,0.0,49.6,cascade_seed0,cascade,0
+5,hospital,Hospital / Healthcare Services,comfortable,142.6,142.6,105.3,0.0,37.3,0.0,cascade_seed0,cascade,0
+5,households,Households,comfortable,367.4,367.4,246.4,0.04,121.0,0.0,cascade_seed0,cascade,0
+5,agriculture,Agriculture,critical,24.0,252.0,144.0,0.12,0.0,228.0,cascade_seed0,cascade,0
+5,industry,Industry / Businesses,critical,0.0,112.5,78.0,0.0,0.0,112.5,cascade_seed0,cascade,0
+5,energy_utility,Energy Utility,comfortable,116.0,116.0,78.9,0.1,37.1,0.0,cascade_seed0,cascade,0
+5,epa,Environmental Protection Agency,critical,0.0,49.6,30.4,0.0,0.0,49.6,cascade_seed0,cascade,0
+6,hospital,Hospital / Healthcare Services,comfortable,145.2,145.2,107.2,0.0,38.0,0.0,cascade_seed0,cascade,0
+6,households,Households,middle,328.8,395.6,253.0,0.08,75.8,66.8,cascade_seed0,cascade,0
+6,agriculture,Agriculture,critical,0.0,281.2,150.0,0.18,0.0,281.2,cascade_seed0,cascade,0
+6,industry,Industry / Businesses,critical,0.0,112.5,78.0,0.0,0.0,112.5,cascade_seed0,cascade,0
+6,energy_utility,Energy Utility,comfortable,126.0,126.0,81.6,0.15,44.4,0.0,cascade_seed0,cascade,0
+6,epa,Environmental Protection Agency,critical,0.0,49.6,30.4,0.0,0.0,49.6,cascade_seed0,cascade,0
+1,hospital,Hospital / Healthcare Services,comfortable,150.0,132.0,97.5,0.0,52.5,0.0,cascade_seed1,cascade,1
+1,households,Households,comfortable,365.0,312.0,220.0,0.0,145.0,0.0,cascade_seed1,cascade,1
+1,agriculture,Agriculture,comfortable,208.1,180.0,120.0,0.0,88.1,0.0,cascade_seed1,cascade,1
+1,industry,Industry / Businesses,comfortable,120.0,112.5,78.0,0.0,42.0,0.0,cascade_seed1,cascade,1
+1,energy_utility,Energy Utility,comfortable,98.1,90.0,68.0,0.0,30.1,0.0,cascade_seed1,cascade,1
+1,epa,Environmental Protection Agency,comfortable,58.8,49.6,30.4,0.0,28.4,0.0,cascade_seed1,cascade,1
+2,hospital,Hospital / Healthcare Services,comfortable,134.6,134.6,99.5,0.0,35.1,0.0,cascade_seed1,cascade,1
+2,households,Households,comfortable,321.4,321.4,226.6,0.0,94.8,0.0,cascade_seed1,cascade,1
+2,agriculture,Agriculture,comfortable,189.0,189.0,126.0,0.0,63.0,0.0,cascade_seed1,cascade,1
+2,industry,Industry / Businesses,middle,111.8,112.5,78.0,0.0,33.8,0.7,cascade_seed1,cascade,1
+2,energy_utility,Energy Utility,comfortable,93.6,93.6,70.7,0.0,22.9,0.0,cascade_seed1,cascade,1
+2,epa,Environmental Protection Agency,comfortable,49.6,49.6,30.4,0.0,19.2,0.0,cascade_seed1,cascade,1
+3,hospital,Hospital / Healthcare Services,comfortable,137.3,137.3,101.4,0.0,35.9,0.0,cascade_seed1,cascade,1
+3,households,Households,comfortable,330.7,330.7,233.2,0.0,97.5,0.0,cascade_seed1,cascade,1
+3,agriculture,Agriculture,comfortable,198.0,198.0,132.0,0.0,66.0,0.0,cascade_seed1,cascade,1
+3,industry,Industry / Businesses,critical,0.0,112.5,78.0,0.0,0.0,112.5,cascade_seed1,cascade,1
+3,energy_utility,Energy Utility,comfortable,97.2,97.2,73.4,0.0,23.8,0.0,cascade_seed1,cascade,1
+3,epa,Environmental Protection Agency,middle,36.8,49.6,30.4,0.0,6.4,12.8,cascade_seed1,cascade,1
+4,hospital,Hospital / Healthcare Services,comfortable,139.9,139.9,103.4,0.0,36.5,0.0,cascade_seed1,cascade,1
+4,households,Households,comfortable,340.1,340.1,239.8,0.0,100.3,0.0,cascade_seed1,cascade,1
+4,agriculture,Agriculture,critical,113.6,224.2,138.0,0.06,0.0,110.6,cascade_seed1,cascade,1
+4,industry,Industry / Businesses,critical,0.0,112.5,78.0,0.0,0.0,112.5,cascade_seed1,cascade,1
+4,energy_utility,Energy Utility,comfortable,106.4,106.4,76.2,0.05,30.2,0.0,cascade_seed1,cascade,1
+4,epa,Environmental Protection Agency,critical,0.0,49.6,30.4,0.0,0.0,49.6,cascade_seed1,cascade,1
+5,hospital,Hospital / Healthcare Services,comfortable,142.6,142.6,105.3,0.0,37.3,0.0,cascade_seed1,cascade,1
+5,households,Households,comfortable,367.4,367.4,246.4,0.04,121.0,0.0,cascade_seed1,cascade,1
+5,agriculture,Agriculture,critical,24.0,252.0,144.0,0.12,0.0,228.0,cascade_seed1,cascade,1
+5,industry,Industry / Businesses,critical,0.0,112.5,78.0,0.0,0.0,112.5,cascade_seed1,cascade,1
+5,energy_utility,Energy Utility,comfortable,116.0,116.0,78.9,0.1,37.1,0.0,cascade_seed1,cascade,1
+5,epa,Environmental Protection Agency,critical,0.0,49.6,30.4,0.0,0.0,49.6,cascade_seed1,cascade,1
+6,hospital,Hospital / Healthcare Services,comfortable,145.2,145.2,107.2,0.0,38.0,0.0,cascade_seed1,cascade,1
+6,households,Households,comfortable,395.6,395.6,253.0,0.08,142.6,0.0,cascade_seed1,cascade,1
+6,agriculture,Agriculture,critical,0.0,281.2,150.0,0.18,0.0,281.2,cascade_seed1,cascade,1
+6,industry,Industry / Businesses,critical,0.0,112.5,78.0,0.0,0.0,112.5,cascade_seed1,cascade,1
+6,energy_utility,Energy Utility,critical,59.2,126.0,81.6,0.15,0.0,66.8,cascade_seed1,cascade,1
+6,epa,Environmental Protection Agency,critical,0.0,49.6,30.4,0.0,0.0,49.6,cascade_seed1,cascade,1
+1,hospital,Hospital / Healthcare Services,comfortable,149.6,132.0,97.5,0.0,52.1,0.0,cascade_seed2,cascade,2
+1,households,Households,comfortable,363.7,312.0,220.0,0.0,143.7,0.0,cascade_seed2,cascade,2
+1,agriculture,Agriculture,comfortable,207.4,180.0,120.0,0.0,87.4,0.0,cascade_seed2,cascade,2
+1,industry,Industry / Businesses,comfortable,119.9,112.5,78.0,0.0,41.9,0.0,cascade_seed2,cascade,2
+1,energy_utility,Energy Utility,comfortable,97.8,90.0,68.0,0.0,29.8,0.0,cascade_seed2,cascade,2
+1,epa,Environmental Protection Agency,comfortable,61.5,49.6,30.4,0.0,31.1,0.0,cascade_seed2,cascade,2
+2,hospital,Hospital / Healthcare Services,comfortable,134.6,134.6,99.5,0.0,35.1,0.0,cascade_seed2,cascade,2
+2,households,Households,comfortable,321.4,321.4,226.6,0.0,94.8,0.0,cascade_seed2,cascade,2
+2,agriculture,Agriculture,comfortable,189.0,189.0,126.0,0.0,63.0,0.0,cascade_seed2,cascade,2
+2,industry,Industry / Businesses,middle,111.8,112.5,78.0,0.0,33.8,0.7,cascade_seed2,cascade,2
+2,energy_utility,Energy Utility,comfortable,93.6,93.6,70.7,0.0,22.9,0.0,cascade_seed2,cascade,2
+2,epa,Environmental Protection Agency,comfortable,49.6,49.6,30.4,0.0,19.2,0.0,cascade_seed2,cascade,2
+3,hospital,Hospital / Healthcare Services,comfortable,137.3,137.3,101.4,0.0,35.9,0.0,cascade_seed2,cascade,2
+3,households,Households,comfortable,330.7,330.7,233.2,0.0,97.5,0.0,cascade_seed2,cascade,2
+3,agriculture,Agriculture,comfortable,198.0,198.0,132.0,0.0,66.0,0.0,cascade_seed2,cascade,2
+3,industry,Industry / Businesses,critical,0.0,112.5,78.0,0.0,0.0,112.5,cascade_seed2,cascade,2
+3,energy_utility,Energy Utility,comfortable,97.2,97.2,73.4,0.0,23.8,0.0,cascade_seed2,cascade,2
+3,epa,Environmental Protection Agency,middle,36.8,49.6,30.4,0.0,6.4,12.8,cascade_seed2,cascade,2
+4,hospital,Hospital / Healthcare Services,comfortable,139.9,139.9,103.4,0.0,36.5,0.0,cascade_seed2,cascade,2
+4,households,Households,comfortable,340.1,340.1,239.8,0.0,100.3,0.0,cascade_seed2,cascade,2
+4,agriculture,Agriculture,critical,113.6,224.2,138.0,0.06,0.0,110.6,cascade_seed2,cascade,2
+4,industry,Industry / Businesses,critical,0.0,112.5,78.0,0.0,0.0,112.5,cascade_seed2,cascade,2
+4,energy_utility,Energy Utility,comfortable,106.4,106.4,76.2,0.05,30.2,0.0,cascade_seed2,cascade,2
+4,epa,Environmental Protection Agency,critical,0.0,49.6,30.4,0.0,0.0,49.6,cascade_seed2,cascade,2
+5,hospital,Hospital / Healthcare Services,comfortable,142.6,142.6,105.3,0.0,37.3,0.0,cascade_seed2,cascade,2
+5,households,Households,comfortable,367.4,367.4,246.4,0.04,121.0,0.0,cascade_seed2,cascade,2
+5,agriculture,Agriculture,critical,24.0,252.0,144.0,0.12,0.0,228.0,cascade_seed2,cascade,2
+5,industry,Industry / Businesses,critical,0.0,112.5,78.0,0.0,0.0,112.5,cascade_seed2,cascade,2
+5,energy_utility,Energy Utility,comfortable,116.0,116.0,78.9,0.1,37.1,0.0,cascade_seed2,cascade,2
+5,epa,Environmental Protection Agency,critical,0.0,49.6,30.4,0.0,0.0,49.6,cascade_seed2,cascade,2
+6,hospital,Hospital / Healthcare Services,comfortable,145.2,145.2,107.2,0.0,38.0,0.0,cascade_seed2,cascade,2
+6,households,Households,middle,328.8,395.6,253.0,0.08,75.8,66.8,cascade_seed2,cascade,2
+6,agriculture,Agriculture,critical,0.0,281.2,150.0,0.18,0.0,281.2,cascade_seed2,cascade,2
+6,industry,Industry / Businesses,critical,0.0,112.5,78.0,0.0,0.0,112.5,cascade_seed2,cascade,2
+6,energy_utility,Energy Utility,comfortable,126.0,126.0,81.6,0.15,44.4,0.0,cascade_seed2,cascade,2
+6,epa,Environmental Protection Agency,critical,0.0,49.6,30.4,0.0,0.0,49.6,cascade_seed2,cascade,2
+1,hospital,Hospital / Healthcare Services,comfortable,135.5,132.0,97.5,0.0,38.0,0.0,deeper_cascade_seed0,deeper_cascade,0
+1,households,Households,comfortable,322.2,312.0,220.0,0.0,102.2,0.0,deeper_cascade_seed0,deeper_cascade,0
+1,agriculture,Agriculture,comfortable,185.4,180.0,120.0,0.0,65.4,0.0,deeper_cascade_seed0,deeper_cascade,0
+1,industry,Industry / Businesses,comfortable,114.0,112.5,78.0,0.0,36.0,0.0,deeper_cascade_seed0,deeper_cascade,0
+1,energy_utility,Energy Utility,comfortable,91.5,90.0,68.0,0.0,23.5,0.0,deeper_cascade_seed0,deeper_cascade,0
+1,epa,Environmental Protection Agency,comfortable,51.4,49.6,30.4,0.0,21.0,0.0,deeper_cascade_seed0,deeper_cascade,0
+2,hospital,Hospital / Healthcare Services,comfortable,134.6,134.6,99.5,0.0,35.1,0.0,deeper_cascade_seed0,deeper_cascade,0
+2,households,Households,comfortable,321.4,321.4,226.6,0.0,94.8,0.0,deeper_cascade_seed0,deeper_cascade,0
+2,agriculture,Agriculture,comfortable,189.0,189.0,126.0,0.0,63.0,0.0,deeper_cascade_seed0,deeper_cascade,0
+2,industry,Industry / Businesses,critical,11.8,112.5,78.0,0.0,0.0,100.7,deeper_cascade_seed0,deeper_cascade,0
+2,energy_utility,Energy Utility,comfortable,93.6,93.6,70.7,0.0,22.9,0.0,deeper_cascade_seed0,deeper_cascade,0
+2,epa,Environmental Protection Agency,comfortable,49.6,49.6,30.4,0.0,19.2,0.0,deeper_cascade_seed0,deeper_cascade,0
+3,hospital,Hospital / Healthcare Services,comfortable,137.3,137.3,101.4,0.0,35.9,0.0,deeper_cascade_seed0,deeper_cascade,0
+3,households,Households,comfortable,330.7,330.7,233.2,0.0,97.5,0.0,deeper_cascade_seed0,deeper_cascade,0
+3,agriculture,Agriculture,critical,129.4,214.5,132.0,0.06,0.0,85.1,deeper_cascade_seed0,deeper_cascade,0
+3,industry,Industry / Businesses,critical,0.0,112.5,78.0,0.0,0.0,112.5,deeper_cascade_seed0,deeper_cascade,0
+3,energy_utility,Energy Utility,comfortable,102.6,102.6,73.4,0.05,29.2,0.0,deeper_cascade_seed0,deeper_cascade,0
+3,epa,Environmental Protection Agency,critical,0.0,49.6,30.4,0.0,0.0,49.6,deeper_cascade_seed0,deeper_cascade,0
+4,hospital,Hospital / Healthcare Services,comfortable,139.9,139.9,103.4,0.0,36.5,0.0,deeper_cascade_seed0,deeper_cascade,0
+4,households,Households,middle,328.1,357.5,239.8,0.04,88.3,29.4,deeper_cascade_seed0,deeper_cascade,0
+4,agriculture,Agriculture,critical,0.0,241.5,138.0,0.12,0.0,241.5,deeper_cascade_seed0,deeper_cascade,0
+4,industry,Industry / Businesses,critical,0.0,112.5,78.0,0.0,0.0,112.5,deeper_cascade_seed0,deeper_cascade,0
+4,energy_utility,Energy Utility,comfortable,112.0,112.0,76.2,0.1,35.8,0.0,deeper_cascade_seed0,deeper_cascade,0
+4,epa,Environmental Protection Agency,critical,0.0,49.6,30.4,0.0,0.0,49.6,deeper_cascade_seed0,deeper_cascade,0
+5,hospital,Hospital / Healthcare Services,comfortable,142.6,142.6,105.3,0.0,37.3,0.0,deeper_cascade_seed0,deeper_cascade,0
+5,households,Households,middle,255.6,385.3,246.4,0.08,9.2,129.7,deeper_cascade_seed0,deeper_cascade,0
+5,agriculture,Agriculture,critical,0.0,270.0,144.0,0.18,0.0,270.0,deeper_cascade_seed0,deeper_cascade,0
+5,industry,Industry / Businesses,critical,0.0,112.5,78.0,0.0,0.0,112.5,deeper_cascade_seed0,deeper_cascade,0
+5,energy_utility,Energy Utility,comfortable,121.8,121.8,78.9,0.15,42.9,0.0,deeper_cascade_seed0,deeper_cascade,0
+5,epa,Environmental Protection Agency,critical,0.0,49.6,30.4,0.0,0.0,49.6,deeper_cascade_seed0,deeper_cascade,0
+6,hospital,Hospital / Healthcare Services,comfortable,145.2,145.2,107.2,0.0,38.0,0.0,deeper_cascade_seed0,deeper_cascade,0
+6,households,Households,critical,182.8,414.0,253.0,0.12,0.0,231.2,deeper_cascade_seed0,deeper_cascade,0
+6,agriculture,Agriculture,critical,0.0,300.0,150.0,0.24,0.0,300.0,deeper_cascade_seed0,deeper_cascade,0
+6,industry,Industry / Businesses,critical,0.0,112.5,78.0,0.0,0.0,112.5,deeper_cascade_seed0,deeper_cascade,0
+6,energy_utility,Energy Utility,comfortable,132.0,132.0,81.6,0.2,50.4,0.0,deeper_cascade_seed0,deeper_cascade,0
+6,epa,Environmental Protection Agency,critical,0.0,49.6,30.4,0.0,0.0,49.6,deeper_cascade_seed0,deeper_cascade,0
+1,hospital,Hospital / Healthcare Services,comfortable,135.5,132.0,97.5,0.0,38.0,0.0,deeper_cascade_seed1,deeper_cascade,1
+1,households,Households,comfortable,322.2,312.0,220.0,0.0,102.2,0.0,deeper_cascade_seed1,deeper_cascade,1
+1,agriculture,Agriculture,comfortable,185.4,180.0,120.0,0.0,65.4,0.0,deeper_cascade_seed1,deeper_cascade,1
+1,industry,Industry / Businesses,comfortable,114.0,112.5,78.0,0.0,36.0,0.0,deeper_cascade_seed1,deeper_cascade,1
+1,energy_utility,Energy Utility,comfortable,91.5,90.0,68.0,0.0,23.5,0.0,deeper_cascade_seed1,deeper_cascade,1
+1,epa,Environmental Protection Agency,comfortable,51.4,49.6,30.4,0.0,21.0,0.0,deeper_cascade_seed1,deeper_cascade,1
+2,hospital,Hospital / Healthcare Services,comfortable,134.6,134.6,99.5,0.0,35.1,0.0,deeper_cascade_seed1,deeper_cascade,1
+2,households,Households,comfortable,321.4,321.4,226.6,0.0,94.8,0.0,deeper_cascade_seed1,deeper_cascade,1
+2,agriculture,Agriculture,comfortable,189.0,189.0,126.0,0.0,63.0,0.0,deeper_cascade_seed1,deeper_cascade,1
+2,industry,Industry / Businesses,critical,11.8,112.5,78.0,0.0,0.0,100.7,deeper_cascade_seed1,deeper_cascade,1
+2,energy_utility,Energy Utility,comfortable,93.6,93.6,70.7,0.0,22.9,0.0,deeper_cascade_seed1,deeper_cascade,1
+2,epa,Environmental Protection Agency,comfortable,49.6,49.6,30.4,0.0,19.2,0.0,deeper_cascade_seed1,deeper_cascade,1
+3,hospital,Hospital / Healthcare Services,comfortable,137.3,137.3,101.4,0.0,35.9,0.0,deeper_cascade_seed1,deeper_cascade,1
+3,households,Households,comfortable,330.7,330.7,233.2,0.0,97.5,0.0,deeper_cascade_seed1,deeper_cascade,1
+3,agriculture,Agriculture,critical,129.4,214.5,132.0,0.06,0.0,85.1,deeper_cascade_seed1,deeper_cascade,1
+3,industry,Industry / Businesses,critical,0.0,112.5,78.0,0.0,0.0,112.5,deeper_cascade_seed1,deeper_cascade,1
+3,energy_utility,Energy Utility,comfortable,102.6,102.6,73.4,0.05,29.2,0.0,deeper_cascade_seed1,deeper_cascade,1
+3,epa,Environmental Protection Agency,critical,0.0,49.6,30.4,0.0,0.0,49.6,deeper_cascade_seed1,deeper_cascade,1
+4,hospital,Hospital / Healthcare Services,comfortable,139.9,139.9,103.4,0.0,36.5,0.0,deeper_cascade_seed1,deeper_cascade,1
+4,households,Households,middle,328.1,357.5,239.8,0.04,88.3,29.4,deeper_cascade_seed1,deeper_cascade,1
+4,agriculture,Agriculture,critical,0.0,241.5,138.0,0.12,0.0,241.5,deeper_cascade_seed1,deeper_cascade,1
+4,industry,Industry / Businesses,critical,0.0,112.5,78.0,0.0,0.0,112.5,deeper_cascade_seed1,deeper_cascade,1
+4,energy_utility,Energy Utility,comfortable,112.0,112.0,76.2,0.1,35.8,0.0,deeper_cascade_seed1,deeper_cascade,1
+4,epa,Environmental Protection Agency,critical,0.0,49.6,30.4,0.0,0.0,49.6,deeper_cascade_seed1,deeper_cascade,1
+5,hospital,Hospital / Healthcare Services,comfortable,142.6,142.6,105.3,0.0,37.3,0.0,deeper_cascade_seed1,deeper_cascade,1
+5,households,Households,middle,255.6,385.3,246.4,0.08,9.2,129.7,deeper_cascade_seed1,deeper_cascade,1
+5,agriculture,Agriculture,critical,0.0,270.0,144.0,0.18,0.0,270.0,deeper_cascade_seed1,deeper_cascade,1
+5,industry,Industry / Businesses,critical,0.0,112.5,78.0,0.0,0.0,112.5,deeper_cascade_seed1,deeper_cascade,1
+5,energy_utility,Energy Utility,comfortable,121.8,121.8,78.9,0.15,42.9,0.0,deeper_cascade_seed1,deeper_cascade,1
+5,epa,Environmental Protection Agency,critical,0.0,49.6,30.4,0.0,0.0,49.6,deeper_cascade_seed1,deeper_cascade,1
+6,hospital,Hospital / Healthcare Services,comfortable,145.2,145.2,107.2,0.0,38.0,0.0,deeper_cascade_seed1,deeper_cascade,1
+6,households,Households,critical,182.8,414.0,253.0,0.12,0.0,231.2,deeper_cascade_seed1,deeper_cascade,1
+6,agriculture,Agriculture,critical,0.0,300.0,150.0,0.24,0.0,300.0,deeper_cascade_seed1,deeper_cascade,1
+6,industry,Industry / Businesses,critical,0.0,112.5,78.0,0.0,0.0,112.5,deeper_cascade_seed1,deeper_cascade,1
+6,energy_utility,Energy Utility,comfortable,132.0,132.0,81.6,0.2,50.4,0.0,deeper_cascade_seed1,deeper_cascade,1
+6,epa,Environmental Protection Agency,critical,0.0,49.6,30.4,0.0,0.0,49.6,deeper_cascade_seed1,deeper_cascade,1
+1,hospital,Hospital / Healthcare Services,comfortable,135.4,132.0,97.5,0.0,37.9,0.0,deeper_cascade_seed2,deeper_cascade,2
+1,households,Households,comfortable,322.0,312.0,220.0,0.0,102.0,0.0,deeper_cascade_seed2,deeper_cascade,2
+1,agriculture,Agriculture,comfortable,185.3,180.0,120.0,0.0,65.3,0.0,deeper_cascade_seed2,deeper_cascade,2
+1,industry,Industry / Businesses,comfortable,113.9,112.5,78.0,0.0,35.9,0.0,deeper_cascade_seed2,deeper_cascade,2
+1,energy_utility,Energy Utility,comfortable,91.5,90.0,68.0,0.0,23.5,0.0,deeper_cascade_seed2,deeper_cascade,2
+1,epa,Environmental Protection Agency,comfortable,51.9,49.6,30.4,0.0,21.5,0.0,deeper_cascade_seed2,deeper_cascade,2
+2,hospital,Hospital / Healthcare Services,comfortable,134.6,134.6,99.5,0.0,35.1,0.0,deeper_cascade_seed2,deeper_cascade,2
+2,households,Households,comfortable,321.4,321.4,226.6,0.0,94.8,0.0,deeper_cascade_seed2,deeper_cascade,2
+2,agriculture,Agriculture,comfortable,189.0,189.0,126.0,0.0,63.0,0.0,deeper_cascade_seed2,deeper_cascade,2
+2,industry,Industry / Businesses,critical,11.8,112.5,78.0,0.0,0.0,100.7,deeper_cascade_seed2,deeper_cascade,2
+2,energy_utility,Energy Utility,comfortable,93.6,93.6,70.7,0.0,22.9,0.0,deeper_cascade_seed2,deeper_cascade,2
+2,epa,Environmental Protection Agency,comfortable,49.6,49.6,30.4,0.0,19.2,0.0,deeper_cascade_seed2,deeper_cascade,2
+3,hospital,Hospital / Healthcare Services,comfortable,137.3,137.3,101.4,0.0,35.9,0.0,deeper_cascade_seed2,deeper_cascade,2
+3,households,Households,comfortable,330.7,330.7,233.2,0.0,97.5,0.0,deeper_cascade_seed2,deeper_cascade,2
+3,agriculture,Agriculture,critical,129.4,214.5,132.0,0.06,0.0,85.1,deeper_cascade_seed2,deeper_cascade,2
+3,industry,Industry / Businesses,critical,0.0,112.5,78.0,0.0,0.0,112.5,deeper_cascade_seed2,deeper_cascade,2
+3,energy_utility,Energy Utility,comfortable,102.6,102.6,73.4,0.05,29.2,0.0,deeper_cascade_seed2,deeper_cascade,2
+3,epa,Environmental Protection Agency,critical,0.0,49.6,30.4,0.0,0.0,49.6,deeper_cascade_seed2,deeper_cascade,2
+4,hospital,Hospital / Healthcare Services,comfortable,139.9,139.9,103.4,0.0,36.5,0.0,deeper_cascade_seed2,deeper_cascade,2
+4,households,Households,middle,328.1,357.5,239.8,0.04,88.3,29.4,deeper_cascade_seed2,deeper_cascade,2
+4,agriculture,Agriculture,critical,0.0,241.5,138.0,0.12,0.0,241.5,deeper_cascade_seed2,deeper_cascade,2
+4,industry,Industry / Businesses,critical,0.0,112.5,78.0,0.0,0.0,112.5,deeper_cascade_seed2,deeper_cascade,2
+4,energy_utility,Energy Utility,comfortable,112.0,112.0,76.2,0.1,35.8,0.0,deeper_cascade_seed2,deeper_cascade,2
+4,epa,Environmental Protection Agency,critical,0.0,49.6,30.4,0.0,0.0,49.6,deeper_cascade_seed2,deeper_cascade,2
+5,hospital,Hospital / Healthcare Services,comfortable,142.6,142.6,105.3,0.0,37.3,0.0,deeper_cascade_seed2,deeper_cascade,2
+5,households,Households,middle,255.6,385.3,246.4,0.08,9.2,129.7,deeper_cascade_seed2,deeper_cascade,2
+5,agriculture,Agriculture,critical,0.0,270.0,144.0,0.18,0.0,270.0,deeper_cascade_seed2,deeper_cascade,2
+5,industry,Industry / Businesses,critical,0.0,112.5,78.0,0.0,0.0,112.5,deeper_cascade_seed2,deeper_cascade,2
+5,energy_utility,Energy Utility,comfortable,121.8,121.8,78.9,0.15,42.9,0.0,deeper_cascade_seed2,deeper_cascade,2
+5,epa,Environmental Protection Agency,critical,0.0,49.6,30.4,0.0,0.0,49.6,deeper_cascade_seed2,deeper_cascade,2
+6,hospital,Hospital / Healthcare Services,comfortable,145.2,145.2,107.2,0.0,38.0,0.0,deeper_cascade_seed2,deeper_cascade,2
+6,households,Households,critical,182.8,414.0,253.0,0.12,0.0,231.2,deeper_cascade_seed2,deeper_cascade,2
+6,agriculture,Agriculture,critical,0.0,300.0,150.0,0.24,0.0,300.0,deeper_cascade_seed2,deeper_cascade,2
+6,industry,Industry / Businesses,critical,0.0,112.5,78.0,0.0,0.0,112.5,deeper_cascade_seed2,deeper_cascade,2
+6,energy_utility,Energy Utility,comfortable,132.0,132.0,81.6,0.2,50.4,0.0,deeper_cascade_seed2,deeper_cascade,2
+6,epa,Environmental Protection Agency,critical,0.0,49.6,30.4,0.0,0.0,49.6,deeper_cascade_seed2,deeper_cascade,2
