@@ -8,6 +8,3 @@ __pycache__/
 
 # Jupyter
 .ipynb_checkpoints/
-
-# Simulation cache
-water_scarcity_sim_cache/

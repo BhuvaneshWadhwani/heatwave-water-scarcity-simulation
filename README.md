@@ -25,6 +25,7 @@ decisions_20260704_205922.csv           Negotiation decisions log
 outcomes_20260704_205922.csv            Allocation outcomes per stakeholder per day
 weights_20260704_205922.csv             Authority weight trajectory
 zones_20260704_205922.csv              Zone classification per stakeholder per day
+water_scarcity_sim_cache/               Pre-cached LLM responses (enables free reproduction)
 ```
 
 
@@ -59,12 +60,16 @@ You will also need an OpenAI API key set as the environment variable `OPENAI_API
 
 ## Reproducing the Results
 
-1. Clone the repository
+1. Clone the repository (includes the cache folder `water_scarcity_sim_cache/`)
 2. Install dependencies
-3. Set your OpenAI API key
-4. Open `water_scarcity_simulation.ipynb` and run the batch cell
+3. Open `water_scarcity_simulation.ipynb` and run the batch cell
 
-LLM responses are cached by (model, prompt, temperature, seed), so re-running with the same seeds will replay cached responses at zero API cost. To generate fresh responses, use a different seed.
+No API key is required to reproduce the published results. All LLM responses
+are pre-cached in `water_scarcity_sim_cache/` by (model, prompt, temperature,
+seed). The notebook will replay cached responses at zero API cost.
+
+To generate new runs with different seeds, set `OPENAI_API_KEY` as an
+environment variable and use seeds not present in the cache.
 
 ---
 
